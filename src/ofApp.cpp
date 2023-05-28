@@ -5,6 +5,8 @@ void ofApp::setup()
 {
 	ofLogNotice(__FUNCTION__);
 
+	ofAddListener(ofEvents().windowResized, this, &ofApp::windowResized);
+
 #if 1
 	//w.doReset();
 	//ofxSurfingHelpers::setMonitorsLayout(1, true, true);
@@ -123,7 +125,8 @@ void ofApp::setupParams()
 	params.add(bLock);
 	params.add(colorBg);
 	params.add(colorAccent);
-	params.add(colorTxt);
+	params.add(colorUser);
+	params.add(colorAssistant);
 
 #ifdef USE_SURF_SUBTITLES
 	params.add(subs.bGui);
@@ -150,7 +153,7 @@ void ofApp::setupParams()
 
 	// Link
 	bigTextInput.colorBubble.makeReferenceTo(colorAccent);
-	bigTextInput.colorTxt.makeReferenceTo(colorTxt);
+	bigTextInput.colorTxt.makeReferenceTo(colorUser);
 }
 
 //--------------------------------------------------------------
@@ -187,7 +190,7 @@ void ofApp::setupSounds()
 	for (auto& s : sounds)
 	{
 		s.setVolume(1.f);
-		s.setMultiPlay(false);
+		s.setMultiPlay(1);
 	}
 
 	sounds[0].play();
@@ -198,7 +201,7 @@ void ofApp::startup()
 {
 	ofLogNotice(__FUNCTION__);
 
-	setupGpt();
+	setupGpt(0);
 
 	//TODO:
 	bigTextInput.typeWaiting = typeSpin;
@@ -206,9 +209,9 @@ void ofApp::startup()
 	//ui.ClearLogDefaultTags();
 
 	// Default
-	doReset();
+	doReset(1);
 
-	ofxSurfingHelpers::load(params);
+	//ofxSurfingHelpers::load(params);
 
 	bDoneStartup = 1;
 }
@@ -218,16 +221,19 @@ void ofApp::startupDelayed()
 {
 	ofLogNotice(__FUNCTION__);
 
+	setupGptPrompts();
 	doSetGptPrompt(indexPrompt);
 
 	bDoneStartupDelayed = 1;
+
+	ofxSurfingHelpers::load(params);
 }
 
 //--------------------------------------------------------------
-void ofApp::setupGpt()
+void ofApp::setupGpt(bool bSilent)
 {
-	ofLogNotice(__FUNCTION__);	
-	sounds[5].play();
+	ofLogNotice(__FUNCTION__);
+	//if(!bSilent) sounds[5].play();
 
 	//if (apiKey.get() == "")
 	//{
@@ -306,24 +312,24 @@ void ofApp::setupGptPrompts()
 	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " other similar from a " + tagWord.get() + " critic.");
 	indexPrompt.setMax(promptsNames.size() - 1);
 
+	ofLogNotice(__FUNCTION__) << ofToString(promptsNames);
+
 	promptsContents.clear();
 	promptsContents.push_back(doCreateGptRolePrompt0());
 	promptsContents.push_back(doCreateGptRolePrompt1());
 	promptsContents.push_back(doCreateGptRolePrompt2());
 	promptsContents.push_back(doCreateGptRolePrompt3());
-
-	//if (bSetup) {
-	//	//indexPrompt = indexPrompt;
-	//	doSetGptPrompt(indexPrompt);
-	//}
 }
 
 //--------------------------------------------------------------
 void ofApp::doSetGptPrompt(int index)
 {
+	if (!bDoneStartupDelayed) return;
+
 	//if (indexPrompt == index) return;//skip if not changed
 
 	ofLogNotice(__FUNCTION__) << index;
+	sounds[5].play();
 
 	ui.AddToLog("doSetGptPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
 
@@ -344,6 +350,7 @@ void ofApp::doSetGptPrompt(int index)
 
 	ui.AddToLog("Prompt: " + promptName, OF_LOG_VERBOSE);
 	ui.AddToLog(strPrompt, OF_LOG_VERBOSE);
+
 }
 
 //--------------------------------------------------------------
@@ -361,7 +368,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 	{
 		if (ui.bGui_GameMode) {
 			bLock = 1;
-			ui.bMinimize = 1;
+			//ui.bMinimize = 1;
 			ui.bDebug = 0;
 			ui.bLog = 0;
 			ui.bExtra = 0;
@@ -375,7 +382,8 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 
 	else if (n == bWaitingGpt.getName())
 	{
-		if (bWaitingGpt) bigTextInput.bWaiting = bWaitingGpt;
+		bigTextInput.bWaiting = bWaitingGpt;
+		//if (bWaitingGpt) bigTextInput.bWaiting = bWaitingGpt;
 	}
 	else if (n == bModeConversation.getName())
 	{
@@ -394,28 +402,29 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 	//	bigTextInput.bWaiting = bWaitingGpt;
 	//}
 
+	//--
+
+	//TODO: workaround to avoid starting calls...
+	//if (!bDoneStartupDelayed) return;
+
 	// Prompts
 	else if (n == amountResultsPrompt.getName())
 	{
 		setupGptPrompts();
+		doSetGptPrompt(indexPrompt);
 	}
 	else if (n == indexTagWord.getName())
 	{
-		tagWord.setWithoutEventNotifications(tags[indexTagWord.get()]);
+		tagWord.set(tags[indexTagWord.get()]);
 		setupGptPrompts();
+		doSetGptPrompt(indexPrompt);
 	}
-	else if (n == tagWord.getName())
-	{
-		//setupGptPrompts();
-	}
-
-	//--
-
-	//TODO: workaround
-	if (!bDoneStartupDelayed) return;
 	if (n == indexPrompt.getName())
 	{
 		doSetGptPrompt(indexPrompt);
+	}
+	else if (n == tagWord.getName())
+	{
 	}
 }
 
@@ -424,7 +433,8 @@ void ofApp::update()
 {
 	//ofLogNotice(__FUNCTION__) << "ofGetFrameNum:" << ofGetFrameNum();
 
-	if (bDoneStartup) {
+	if (bDoneStartup)
+	{
 		if (!bDoneStartupDelayed) {
 			ofLogNotice(__FUNCTION__) << "ofGetFrameNum:" << ofGetFrameNum();
 			startupDelayed();
@@ -480,11 +490,11 @@ void ofApp::drawBg()
 		// Flash when submit
 		if (v > 0) v -= 0.05f;
 		else v = 0;
-		// Use color from subtitler when no flash
 		int bgMin = 100;
 		if (v > 0) ofClear(bgMin + (255 - bgMin) * v);
-		else {
+		else { // standby
 #ifdef USE_SURF_SUBTITLES
+			// Use color from subtitler when no flash
 			ofClear(subs.getColorBg());
 #else
 			ofClear(colorBg.get());
@@ -529,13 +539,24 @@ void ofApp::drawImGuiMain()
 	ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
 
 	// Constraints
-	ImVec2 size_min = ImVec2(110, 300);
-	//ImVec2 size_min = ImVec2(140, 300);
+	//ImVec2 size_min = ImVec2(120, 300);
+	ImVec2 size_min = ImVec2(140, 300);
 	ImVec2 size_max = ImVec2(FLT_MAX, FLT_MAX);
 	ImGui::SetNextWindowSizeConstraints(size_min, size_max);
 
 	if (ui.BeginWindow(bGui))
 	{
+		//TODO:
+		if (0)
+			if (ofGetFrameNum() % 120 == 0) {
+				// Bring "My Window" to the top of the z-order if it's not already in the front
+				if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+				{
+					ImGui::SetWindowFocus(nullptr);
+					ImGui::SetWindowFocus("My Window");
+				}
+			}
+
 		string s;
 
 		ui.PushFont(SurfingFontTypes(1));
@@ -543,6 +564,7 @@ void ofApp::drawImGuiMain()
 		ui.PopFont();
 
 		if (!ui.isGameMode()) {
+			ui.AddSpacing();
 			ui.AddMinimizerToggle();
 			ui.AddLogToggle();
 			if (ui.isMaximized())
@@ -556,21 +578,49 @@ void ofApp::drawImGuiMain()
 		}
 		ui.AddSpacingBigSeparated();
 
-		ui.AddLabel("Colors", 1);
-		ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-		ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-		ui.Add(colorTxt, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-		ui.AddSpacingBigSeparated();
-
+		// Game
 		if (ui.isGameMode()) {
 			ui.AddLabel("Font Size", 1);
 			ui.DrawWidgetsFonts(sizeFontConv, 0);
 			ui.AddSpacingSeparated();
+
+			ui.AddLabel("Colors", 1);
+			ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			ui.AddSpacingSeparated();
+
+			if (ui.AddButton("Restart##2", OFX_IM_BUTTON))
+			{
+				doGptRestart();
+			}
+			if (ui.AddButton("Clear##2", OFX_IM_BUTTON))
+			{
+				// Clear
+				doClear();
+			}
+			if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
+				doGptRegenerate();
+			}
+			if (ui.AddButton("Resend", OFX_IM_BUTTON)) {
+				doGptResend();
+			}
+			ui.AddSpacingSeparated();
+
+			ui.AddCombo(indexPrompt, promptsNames);
+			ui.PushFont(SurfingFontTypes(1));
+			ui.AddTooltip(strPrompt);
+			ui.PopFont();
+			if (indexPrompt != 0) {
+				ui.AddCombo(indexTagWord, tags);
+				ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+			}
 		}
 
-		//--
-
-		if (!ui.isGameMode()) {
+		// No Game
+		if (!ui.isGameMode())
+		{
 			ui.AddLabelHuge("ChatGPT");
 
 			static ofParameter<bool> b{ "SERVER",0 };
@@ -588,7 +638,7 @@ void ofApp::drawImGuiMain()
 
 				if (ui.AddButton("Restart", OFX_IM_BUTTON))
 				{
-					setupGpt();
+					doGptRestart();
 				}
 				if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
 				{
@@ -596,112 +646,110 @@ void ofApp::drawImGuiMain()
 				}
 			}
 			ui.AddSpacingSeparated();
-		}
 
 #ifdef USE_EDITOR_INPUT
-		//ui.PushFont(OFX_IM_FONT_BIG);
-		{
-			if (ui.AddButton("Send"))
+			//ui.PushFont(OFX_IM_FONT_BIG);
 			{
-				doGptSendMessage(editorInput.getText(), bModeConversation);
+				if (ui.AddButton("Send"))
+				{
+					doGptSendMessage(editorInput.getText(), bModeConversation);
+				}
 			}
-		}
-		//ui.PopFont();
+			//ui.PopFont();
 #endif
 
-		if (ui.AddButton("Restart##2", OFX_IM_BUTTON))
-		{
-			setupGpt();
-		}
-		if (ui.AddButton("Clear##2", OFX_IM_BUTTON))
-		{
-			// Clear
-			doClear();
-		}
-		if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
-			doGptRegenerate();
-		}
-		if (ui.AddButton("Resend", OFX_IM_BUTTON)) {
-			doGptResend();
-		}
-		ui.AddSpacingSeparated();
+			if (ui.AddButton("Restart##2", OFX_IM_BUTTON))
+			{
+				doGptRestart();
+			}
+			if (ui.AddButton("Clear##2", OFX_IM_BUTTON))
+			{
+				// Clear
+				doClear();
+			}
+			if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
+				doGptRegenerate();
+			}
+			if (ui.AddButton("Resend", OFX_IM_BUTTON)) {
+				doGptResend();
+			}
+			ui.AddSpacingSeparated();
 
-		if (!ui.isGameMode()) {
 			ui.AddLabelBig("Prompt");
 			ui.AddSpacing();
 
 			ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
 			if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
 			ui.AddSpacingSeparated();
-		}
 
-		//ui.AddLabel("Role Prompt", 1);
-		static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
-		ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
-		if (bRole) {
-			ui.AddSpacing();
-			ui.AddCombo(indexPrompt, promptsNames);
-			ui.PushFont(SurfingFontTypes(1));
-			ui.AddTooltip(strPrompt);
-			ui.PopFont();
-			if (indexPrompt != 0) {
-				ui.AddCombo(indexTagWord, tags);
-				ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-			}
-		}
-
-		//--
-
-#ifdef USE_EDITOR_INPUT
-		ui.AddLabelHuge("EDITORS");
-		ui.AddSpacing();
-		ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-#endif
-		if (ui.isMaximized())
-		{
-			ui.AddSpacingSeparated();
-			ui.Add(bModeConversation, OFX_IM_TOGGLE);
-			if (bModeConversation) {
-				ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
+			//ui.AddLabel("Role Prompt", 1);
+			static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
+			ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
+			if (bRole) {
 				ui.AddSpacing();
-				if (bGui_GptConversation) {
-					if (ui.AddButton("Reset window")) {
-						bResetWindowConversation = 1;
-					}
-					ui.DrawWidgetsFonts(sizeFontConv, 0);
-					ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
-					s = "Last block will blink";
-					ui.AddTooltip(s);
-					ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
-					s = "Last block will be bigger";
-					ui.AddTooltip(s);
+				ui.AddCombo(indexPrompt, promptsNames);
+				ui.PushFont(SurfingFontTypes(1));
+				ui.AddTooltip(strPrompt);
+				ui.PopFont();
+				if (indexPrompt != 0) {
+					ui.AddCombo(indexTagWord, tags);
+					ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
 				}
 			}
 
-#ifdef USE_EDITOR_RESPONSE
-			ui.AddSpacingBigSeparated();
-			ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
-#endif
-			s = gptErrorMessage;
-			if (s != "") {
-				ui.AddSpacingBigSeparated();
+			//--
 
-				//s = errorCodesNames[indexErrorCode.get()];
-				//ui.AddLabelBig(s);
-				ui.AddLabelBig(s);
-			}
-#if(0)
+#ifdef USE_EDITOR_INPUT
+			ui.AddLabelHuge("EDITORS");
+			ui.AddSpacing();
+			ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+#endif
+			if (ui.isMaximized())
+			{
+				ui.AddSpacingSeparated();
+				ui.Add(bModeConversation, OFX_IM_TOGGLE);
+				if (bModeConversation) {
+					ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
+					ui.AddSpacing();
+					if (bGui_GptConversation) {
+						if (ui.AddButton("Reset window")) {
+							doResetWindowConversation();
+						}
+						ui.DrawWidgetsFonts(sizeFontConv, 0);
+						ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
+						s = "Last block will blink";
+						ui.AddTooltip(s);
+						ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
+						s = "Last block will be bigger";
+						ui.AddTooltip(s);
+					}
+				}
+
+#ifdef USE_EDITOR_RESPONSE
+				ui.AddSpacingBigSeparated();
+				ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
+#endif
+				s = gptErrorMessage;
+				if (s != "") {
+					ui.AddSpacingBigSeparated();
+
+					//s = errorCodesNames[indexErrorCode.get()];
+					//ui.AddLabelBig(s);
+					ui.AddLabelBig(s);
+				}
 #if(1)
-			if (ui.bDebug) {
-				ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
-				if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
-					bigTextInput.typeWaiting = typeSpin;
-				};
-		}
+#if(0)
+				if (ui.bDebug) {
+					ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
+					if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
+						bigTextInput.typeWaiting = typeSpin;
+					};
+				}
 #endif
-			ImSpinner::Spinner(bWaitingGpt, typeSpin);
-			//ui.AddSpacingBigSeparated();
+				ImSpinner::Spinner(bWaitingGpt, typeSpin);
+				//ui.AddSpacingBigSeparated();
 #endif
+			}
 		}
 
 		//--
@@ -738,7 +786,7 @@ void ofApp::drawImGuiMain()
 					ui.AddLabel(s);
 				}
 			}
-				}
+		}
 #endif
 
 		//--
@@ -787,9 +835,9 @@ void ofApp::drawImGuiMain()
 							if (ui.AddButton(s, OFX_IM_BUTTON_BIG))
 							{
 								doClearSubsList();
-			}
-		}
-}
+							}
+						}
+					}
 					//ui.PopFont();
 				}
 			}
@@ -920,7 +968,9 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	// Reset
 	{
 		float padx = 100;
-		float pady = ofGetHeight() * 0.15;
+		float pady = 50;
+		//float pady = ofGetHeight() * 0.15;
+		pady = MAX(pady, bigTextInput.getWindowRectangle().getBottom() + 50);
 		float w = ofGetWidth() - 2 * padx;
 		float h = ofGetHeight() - pady - 100;
 		float x = padx;
@@ -935,6 +985,10 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	//float ratio = 1.25f;
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbarSize * scrollbarRatio);
 	// scale the scrollbar size
+
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, colorAccent.get());
+	ImVec4 ch(colorAccent.get().r/255.f, colorAccent.get().g / 255.f, colorAccent.get().b / 255.f, 0.5f);
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ch);
 
 	if (ui.BeginWindow(bGui_GptConversation, window_flags))
 	{
@@ -951,8 +1005,9 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 
 		// Colorized by roles
 
-		ImU32 c1 = ImGui::GetColorU32(colorTxt.get());
-		ImU32 c2 = ImGui::GetColorU32(bigTextInput.getColor());
+		ImU32 c1 = ImGui::GetColorU32(colorUser.get());
+		ImU32 c2 = ImGui::GetColorU32(colorAssistant.get());
+		//ImU32 c2 = ImGui::GetColorU32(bigTextInput.getColor());
 
 		//try 
 		{
@@ -991,30 +1046,70 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 		ui.PopFont();
 
 		//TODO:
-#if(1)
+#if(0)
 		if (bFlagGoBottom) {
 			bFlagGoBottom = 0;
 			// Scroll to the bottom of the window
 			ImGui::SetScrollHereY(1.0f);
-		}
+	}
 #else
-		//tween
+		// Tween
 		if (bFlagGoBottom)
 		{
-			float scrollY_ = ImGui::GetScrollY();
-			float scrollYto = 1.f;
-			float step = 0.02f;
-			if (scrollY_ < 1.0f) scrollY_ += step;
-			else if (scrollY_ == scrollYto) {
+			float y = ImGui::GetScrollY();
+			float step = 0.1f;
+			if (y < 1.0f) y += step;
+			else if (y >= 1.f) {
 				bFlagGoBottom = 0;//done
+				y = 1.f;
+				cout << "y:" << y << endl;
 			}
-			// Scroll to the bottom of the window
-			ImGui::SetScrollHereY(scrollY_);
+			//ImGui::SetScrollY(y);
+			ImGui::SetScrollHereY(y);
 		}
+
+		//if (bFlagGoBottom)
+		//{
+		//	// Define a boolean flag to trigger the scroll animation
+		//	bool shouldScroll = 1;
+
+		//	// Define the target scroll position
+		//	float targetScrollY = 1;
+
+		//	// Define the duration of the scroll animation (in seconds)
+		//	float duration = 0.5f;
+
+		//	// Define the start time of the scroll animation
+		//	float startTime = 0.0f;
+
+		//	// Update the scroll position
+		//	if (shouldScroll)
+		//	{
+		//		// Set the start time of the animation
+		//		startTime = ImGui::GetTime();
+
+		//		// Clear the flag to prevent triggering the animation again
+		//		shouldScroll = false;
+		//	}
+
+		//	// Calculate the elapsed time since the start of the animation
+		//	float elapsedTime = ImGui::GetTime() - startTime;
+
+		//	// Calculate the current scroll position based on the elapsed time and the target position
+		//	float currentScrollY = ofLerp(0.0f, targetScrollY, elapsedTime / duration);
+
+		//	// Set the current scroll position
+		//	ImGui::SetScrollY(currentScrollY);
+
+		//	if (currentScrollY == targetScrollY) bFlagGoBottom = 0;
+		//}
 #endif
 
 		ui.EndWindow();
-	}
+}
+
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
 
 	ImGui::PopStyleVar();
 }
@@ -1073,7 +1168,7 @@ void ofApp::keyPressed(int key)
 	if (chatGpt.isWaiting()) return;
 
 	//TODO:
-	/*
+
 	if (key == '1') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
 	if (key == '2') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
 	if (key == '3') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
@@ -1083,7 +1178,7 @@ void ofApp::keyPressed(int key)
 	if (key == '7') { strBandname = "Primus"; doGptSendMessage(strBandname); return; }
 	if (key == '8') { strBandname = "Kraftwerk"; doGptSendMessage(strBandname); return; }
 	if (key == '9') { strBandname = "Portishead"; doGptSendMessage(strBandname); return; }
-	*/
+
 
 	if (0) return;
 
@@ -1116,6 +1211,25 @@ void ofApp::keyPressed(int key)
 	//// Regenerate
 	//else if (key == OF_KEY_RETURN) { doGptRegenerate(); }
 	//else if (key == ' ') { doGptRegenerate(); }
+
+	//TODO:
+	//browse history
+	if (key == OF_KEY_UP) {
+		i_hist--;
+		i_hist = MAX(0, i_hist);
+		i_hist = MIN(textHistory.size() - 1, i_hist);
+		string s = textHistory[i_hist];
+		bigTextInput.setText(s);
+		textInput.setWithoutEventNotifications(s);
+	}
+	else if (key == OF_KEY_DOWN) {
+		i_hist++;
+		i_hist = MAX(0, i_hist);
+		i_hist = MIN(textHistory.size() - 1, i_hist);
+		string s = textHistory[i_hist];
+		bigTextInput.setText(s);
+		textInput.setWithoutEventNotifications(s);
+	}
 
 	//--
 
@@ -1270,10 +1384,14 @@ void ofApp::doGptSendMessage(string message) {
 
 	// focus in text input
 	bigTextInput.setFocus();
+
+	i_hist = 0;
 }
 
 //--------------------------------------------------------------
 void ofApp::doGptResend() {
+	if (textHistory.size() == 0) return;
+
 	ui.AddToLog("doGptResend()", OF_LOG_WARNING);
 
 	string s = textHistory.back();
@@ -1409,7 +1527,6 @@ void ofApp::doGptGetMessage()
 	bigTextInput.setFocus();
 }
 
-/*
 //--------------------------------------------------------------
 void ofApp::doRandomInput()
 {
@@ -1433,6 +1550,9 @@ void ofApp::doRandomInput()
 	else if (r < 9) { strBandname = "Portishead"; }
 	string s = "";
 	s = strBandname;
+
+	//textInput = s;
+
 	ui.AddToLog(s, OF_LOG_NOTICE);
 
 	bigTextInput.setText(s);
@@ -1445,7 +1565,6 @@ void ofApp::doRandomInput()
 	doGptSendMessage(editorInput.getText(), bModeConversation);
 #endif
 };
-*/
 
 //--------------------------------------------------------------
 void ofApp::doSwapGptPrompt() {
@@ -1460,6 +1579,7 @@ void ofApp::exit()
 {
 	ofLogVerbose() << "exit()";
 
+	ofRemoveListener(ofEvents().windowResized, this, &ofApp::windowResized);
 	ofRemoveListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
 
 	//sounds[0].play();//can't be played bc just closes
@@ -1526,10 +1646,10 @@ void ofApp::drawImGuiWidgetsWhisper()
 		}
 		ui.AddSpacing();
 		//ui.AddLabel(whisper.getTextLast());
-}
+	}
 
 	ui.AddSpacingBigSeparated();
-	}
+}
 
 #endif
 
@@ -1599,6 +1719,18 @@ void ofApp::doAttendCallbackTextInput()
 }
 
 //--------------------------------------------------------------
+void ofApp::doGptRestart()
+{
+	ofLogNotice(__FUNCTION__);
+	sounds[5].play();
+
+	setupGpt();
+	doClear(1);
+	setupGptPrompts();
+	doSetGptPrompt(indexPrompt);
+}
+
+//--------------------------------------------------------------
 bool ofApp::doGptResetEndpointIP()
 {
 	ofLogNotice(__FUNCTION__);
@@ -1655,10 +1787,10 @@ bool ofApp::doGptResetEndpointIP()
 }
 
 //--------------------------------------------------------------
-void ofApp::doReset()
+void ofApp::doReset(bool bSilent)
 {
 	ofLogNotice(__FUNCTION__);
-	sounds[5].play();
+	if (!bSilent) sounds[5].play();
 
 	bGui = 1;
 	bGui_GptConversation = 1;
@@ -1667,20 +1799,24 @@ void ofApp::doReset()
 
 	bModeConversation = 1;
 	sizeFontConv = 2;
-	bResetWindowConversation = 1;
 	bLastBlink = 1;
 	bLastBigger = 0;
+	doResetWindowConversation();
 
-	colorBg = ofColor(39);
-	colorAccent = ofColor(85, 0, 185);
-	colorTxt = ofColor(255, 255);
+	//colorBg = ofColor(39);
+	//colorAccent = ofColor(85, 0, 185);
+	//colorUser = ofColor(255, 255);
+	//colorAssistant = ofColor(200, 255);
+
+	setupGptPrompts();
+	doSetGptPrompt(0);
 }
 
 //--------------------------------------------------------------
-void ofApp::doClear()
+void ofApp::doClear(bool bSilent)
 {
 	ofLogNotice(__FUNCTION__);
-	sounds[4].play();
+	if (!bSilent) sounds[4].play();
 
 	ui.AddToLog("Clear", OF_LOG_WARNING);
 

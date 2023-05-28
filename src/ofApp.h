@@ -8,6 +8,8 @@
 
 	scroll tween
 
+	layout text bubble / conversation as landscape/portrait.
+
 	textInput bubble
 		fix clear. make button bigger
 		add wait spin
@@ -41,11 +43,11 @@
 //--
 
 // Optional Modules
-//#define USE_WHISPER
-//#define USE_EDITOR_INPUT
 #define USE_EDITOR_RESPONSE
-//#define USE_SURF_TTF
+#define USE_SURF_TTF
+//#define USE_WHISPER
 //#define USE_SURF_SUBTITLES
+//#define USE_EDITOR_INPUT
 
 //--
 
@@ -116,11 +118,13 @@ public:
 	ofJson jResponse;
 
 	vector<string> textHistory;
+	int i_hist = 0;
 
 	//--
 
 	ChatThread chatGpt;
-	void setupGpt();
+	void doGptRestart();
+	void setupGpt(bool bSilent = 0);
 	string pathGptSettings = "GptChat_ConfigKey.json";
 	void doGptSendMessage(string message);
 	void doGptRegenerate();
@@ -172,9 +176,14 @@ public:
 	void doAttendCallbackClear();
 	void drawWidgetsToTextInput()
 	{
+#if(1)
 		//ui.SameLine();
-		//ui.AddSpacingY(10);
+		//ui.AddSpacingX(10);
+		//ui.AddSpacingY(5);
 		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+#else
+		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+#endif
 	}
 
 	//--
@@ -193,7 +202,7 @@ public:
 
 	//--
 
-	void doClear();
+	void doClear(bool bSilent = 0);
 
 	//--
 
@@ -208,9 +217,9 @@ public:
 	vector<string> promptsNames;
 	vector<string> promptsContents;
 	ofParameter<int> amountResultsPrompt{ "Amount", 10, 1, 100 };
-	vector<string> tags{ "music band", "novelist", "screenwriter", "film director" };
+	vector<string> tags{ "music band", "book writer", "illustrator", "film director" };
 	ofParameter<int> indexTagWord{ "Tag", 0, 0, tags.size() - 1 };
-	ofParameter<string> tagWord{ "Tag Word", "music band" };
+	ofParameter<string> tagWord{ "Tag Word", "-1" };
 
 	// Roles (system prompts)
 
@@ -284,19 +293,25 @@ and without a '.' at the end of the line, just include the break line char.)";
 
 	ofParameter<ofColor> colorBg{ "ColorBg", ofColor::grey, ofColor(), ofColor() };
 	ofParameter<ofColor> colorAccent{ "ColorAccent", ofColor::grey, ofColor(), ofColor() };
-	ofParameter<ofColor> colorTxt{ "ColorText", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorUser{ "ColorUser", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorAssistant{ "ColorAssistant", ofColor::grey, ofColor(), ofColor() };
 
-	//// Tester
-	//string strBandname;
-	//void doRandomInput();
-
-	//ofParameter<int> fontR{ "FontR", 0, 0, 3 };
-	//ofParameter<bool> bGui_GptLastReply{ "GPT Last Reply",false };
+	// Tester
+	string strBandname;
+	void doRandomInput();
 
 	bool bDoneStartup = 0;
 	bool bDoneStartupDelayed = 0;
 
-	void doReset();
+	void doReset(bool bSilent = 0);
 
 	ofxWindowApp w;
+
+	void windowResized(ofResizeEventArgs& resize)
+	{
+		ofLogVerbose("ofxSurfingImGui::BigTextInput::windowResized") << resize.width << "," << resize.height;
+		doResetWindowConversation();
+	}
+
+	void doResetWindowConversation() { bResetWindowConversation = 1; }
 };
