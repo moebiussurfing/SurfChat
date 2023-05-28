@@ -44,7 +44,7 @@
 //#define USE_WHISPER
 //#define USE_EDITOR_INPUT
 #define USE_EDITOR_RESPONSE
-#define USE_SURF_TTF
+//#define USE_SURF_TTF
 //#define USE_SURF_SUBTITLES
 
 //--
@@ -65,9 +65,11 @@
 #ifdef USE_SURF_SUBTITLES
 #include "ofxSurfingTextSubtitle.h"
 #endif
+
 #ifdef USE_WHISPER
 #include "surfingWhisper.h"
 #endif
+
 #ifdef USE_SURF_TTF
 #include "ofxSurfingTTS.h"
 #endif
@@ -76,44 +78,53 @@
 
 #include <curl/curl.h>
 
+#include <functional>
+using callback_t = std::function<void()>;
+
 class ofApp : public ofBaseApp
 {
+
 public:
 	void setup();
-	void setupParams();
 	void update();
 	void draw();
-	void drawBg();
 	void exit();
 	void keyPressed(int key);
-	void startup();
+
+	void setupParams();
 	void setupSounds();
+	void startup();
+	void startupDelayed();
+	void drawBg();
 
 	ofParameter<bool> bGui;
-	ofParameterGroup params{ "ofApp" };
+	ofParameterGroup params{ "surfCHAT" };
 	void Changed_Params(ofAbstractParameter& e);
 
 	ofxSurfingGui ui;
 	void drawImGui();
 	void drawImGuiMain();
 	void drawImGuiConversation(ofxSurfingGui& ui);
-	bool bResetWindowConversation = 0;
 
+	bool bResetWindowConversation = 0;
 	bool bFlagGoBottom = 0;
 
-#ifdef USE_SURF_SUBTITLES
-	ofxSurfingTextSubtitle subs;
-	string path;
-	void doPopulateText(string s = "");
-	void doPopulateTextBlocks();
-	void doClearSubsList();
-#endif
+	//--
+
+	string textLastResponse;
+	ofJson jQuestion;
+	ofJson jResponse;
+
+	vector<string> textHistory;
+
+	//--
 
 	ChatThread chatGpt;
 	void setupGpt();
 	string pathGptSettings = "GptChat_ConfigKey.json";
 	void doGptSendMessage(string message);
 	void doGptRegenerate();
+	void doGptResend();
 	void doGptGetMessage();
 	ofParameter<bool> bWaitingGpt{ "GPT WAITING", 0 };
 	// Error codes for various error conditions.
@@ -141,6 +152,7 @@ public:
 	ofParameter<string> model{ "Model","" };
 	ofParameter<bool> bModeConversation{ "Conversation", false };
 
+	ofParameterGroup paramsConversations{ "Conversations" };
 	ofJson jConversationHistory = ofJson();
 	ofParameter<bool> bGui_GptConversation{ "GPT Conversation",false };
 	ofParameter<int> sizeFontConv{ "SizeFontConv", 0, 0, 3 };
@@ -150,65 +162,65 @@ public:
 	ofParameter<bool> bModeOneSlide{ "OneSlide", false };
 	ofParameter<bool> bLock{ "Lock", false };
 
+	//--
+
 	// Text input bubble
 	BigTextInput bigTextInput;
 	void doAttendCallbackTextInput();
 	ofEventListener eTextInput;
 	ofParameter<string> textInput{ "TextInput", "" };
 	void doAttendCallbackClear();
+	void drawWidgetsToTextInput()
+	{
+		//ui.SameLine();
+		//ui.AddSpacingY(10);
+		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+	}
+
+	//--
 
 	// Text Editors
 #ifdef USE_EDITOR_INPUT
 	SurfingTextEditor editorInput;
 #endif
 #ifdef USE_EDITOR_RESPONSE
-	SurfingTextEditor editorResponse;
+	SurfingTextEditor editorLastResponse;
 #endif
 
-	//ofParameter<int> fontR{ "FontR", 0, 0, 3 };
-	//ofParameter<bool> bGui_GptLastReply{ "GPT Last Reply",false };
-
+#ifdef USE_EDITOR_INPUT
 	void drawWidgetsEditor(); // Advanced: inserted widgets
-
-	string textLastResponse;
-
-	ofJson jQuestion;
-	ofJson jResponse;
-
-	string strBandname;
+#endif
 
 	//--
 
 	void doClear();
 
-	void doRandomInput();
-
 	//--
 
 	// Prompts and Roles
-
 	void setupGptPrompts();
-	void doSwapGptPrompt();
-
+	void doSetGptPrompt(int index);
+	void doSwapGptPrompt();//next
 	ofParameterGroup paramsPrompts{ "Prompts" };
 	string strPrompt;
-	ofParameter<int> indexPrompt{ "Prompt", 0, 0, 3 };
+	ofParameter<int> indexPrompt{ "IndexPrompt", 0, 0, 3 };
 	string promptName;
 	vector<string> promptsNames;
 	vector<string> promptsContents;
-	void setGptPrompt(int index);
 	ofParameter<int> amountResultsPrompt{ "Amount", 10, 1, 100 };
 	vector<string> tags{ "music band", "novelist", "screenwriter", "film director" };
 	ofParameter<int> indexTagWord{ "Tag", 0, 0, tags.size() - 1 };
 	ofParameter<string> tagWord{ "Tag Word", "music band" };
 
+	// Roles (system prompts)
+
 	// "Default"
-	static string doCreateGptPrompt0() {
-		return R"(Act as your default ChatGPT behavior \nfollowing the conversation.)";
+	static string doCreateGptRolePrompt0() {
+		return string("Act as your default ChatGPT behavior \nfollowing the conversation.");
 	}
 
 	// "Short sentences from an advertiser."
-	string doCreateGptPrompt1() {
+	string doCreateGptRolePrompt1() {
 		string s0 = "From now on, I want you to act as a " + tagWord.get() + " advertiser.\n";
 		string s1 = "You will create a campaign to promote that " + tagWord.get() + "\n";
 		string s2 = "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
@@ -218,7 +230,7 @@ public:
 	}
 
 	// "Words list from a critic."
-	string doCreateGptPrompt2() {
+	string doCreateGptRolePrompt2() {
 		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get() + " name.\n";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
 		string s2 = R"(You will only reply with that words list, and nothing else. Words will be sorted starting from less to more relevance.
@@ -228,7 +240,7 @@ and without a '.' at the end of the line, just include the break line char.)";
 	}
 
 	// "Similar authors from a critic."
-	string doCreateGptPrompt3() {
+	string doCreateGptRolePrompt3() {
 		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get()
 			+ " name. ";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
@@ -250,6 +262,14 @@ and without a '.' at the end of the line, just include the break line char.)";
 
 	//--
 
+#ifdef USE_SURF_SUBTITLES
+	ofxSurfingTextSubtitle subs;
+	string path;
+	void doPopulateText(string s = "");
+	void doPopulateTextBlocks();
+	void doClearSubsList();
+#endif
+
 #ifdef USE_WHISPER
 	surfingWhisper whisper;
 	void doUpdatedWhisper();
@@ -261,6 +281,22 @@ and without a '.' at the end of the line, just include the break line char.)";
 #endif
 
 	//--
+
+	ofParameter<ofColor> colorBg{ "ColorBg", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorAccent{ "ColorAccent", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorTxt{ "ColorText", ofColor::grey, ofColor(), ofColor() };
+
+	//// Tester
+	//string strBandname;
+	//void doRandomInput();
+
+	//ofParameter<int> fontR{ "FontR", 0, 0, 3 };
+	//ofParameter<bool> bGui_GptLastReply{ "GPT Last Reply",false };
+
+	bool bDoneStartup = 0;
+	bool bDoneStartupDelayed = 0;
+
+	void doReset();
 
 	ofxWindowApp w;
 };
