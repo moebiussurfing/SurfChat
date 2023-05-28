@@ -51,8 +51,10 @@ void ofApp::setup()
 
 	//--
 
+#ifdef USE_SURF_SUBTITLES
 	subs.setUiPtr(&ui);
 	subs.setup(); // Startup with no subs mode
+#endif
 
 	//--
 
@@ -91,23 +93,7 @@ void ofApp::setup()
 
 	//--
 
-	params.add(bGui);
-	params.add(ui.bGui_GameMode);
-	params.add(bLock);
-	params.add(bigTextInput.bGui);
-	params.add(subs.bGui);
-	params.add(bModeConversation);
-	params.add(bModeOneSlide);
-	params.add(sizeFontConv);
-	params.add(bLastBigger);
-	params.add(bLastBlink);
-	params.add(bGui_GptConversation);
-	params.add(indexPrompt);
-	params.add(typeSpin);
-	//params.add(fontR);
-	//params.add(bGui_GptLastReply);
-
-	ofAddListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
+	setupParams();
 
 	//--
 
@@ -117,6 +103,37 @@ void ofApp::setup()
 	//--
 
 	startup();
+}
+
+//--------------------------------------------------------------
+void ofApp::setupParams()
+{
+	params.add(bGui);
+	params.add(ui.bGui_GameMode);
+	params.add(bLock);
+	params.add(bigTextInput.bGui);
+
+#ifdef USE_SURF_SUBTITLES
+	params.add(subs.bGui);
+#endif
+	params.add(bModeConversation);
+	params.add(bModeOneSlide);
+	params.add(sizeFontConv);
+	params.add(bLastBigger);
+	params.add(bLastBlink);
+	params.add(bGui_GptConversation);
+	params.add(typeSpin);
+
+	paramsPrompts.add(indexPrompt);
+	paramsPrompts.add(indexTagWord);
+	paramsPrompts.add(tagWord);
+	paramsPrompts.add(amountResultsPrompt);
+	params.add(paramsPrompts);
+
+	//params.add(fontR);
+	//params.add(bGui_GptLastReply);
+
+	ofAddListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
 }
 
 //--------------------------------------------------------------
@@ -232,27 +249,29 @@ void ofApp::setupGpt()
 	//--
 
 	setupGptPrompts();
+
+	setGptPrompt(0);//default
 }
 
 //--------------------------------------------------------------
 void ofApp::setupGptPrompts()
 {
-	//TODO:
 	// Create prompts
 	promptsNames.clear();
-	promptsNames.push_back("10 short sentences.");
-	promptsNames.push_back("10 words list.");
-	promptsNames.push_back("10 Similar bands");
-	promptsNames.push_back("Default");
+	promptsNames.push_back("Default conversation.");
+	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " short sentences from a " + tagWord.get() + " advertiser.");
+	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " words from a " + tagWord.get() + " critic.");
+	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " other similar from a " + tagWord.get() + " critic.");
 	indexPrompt.setMax(promptsNames.size() - 1);
 
-	prompts.clear();
-	prompts.push_back(std::pair<std::string, std::string> { promptsNames[0], GPT_Prompt_0() });
-	prompts.push_back(std::pair<std::string, std::string> { promptsNames[1], GPT_Prompt_1() });
-	prompts.push_back(std::pair<std::string, std::string> { promptsNames[2], GPT_Prompt_2() });
-	prompts.push_back(std::pair<std::string, std::string> { promptsNames[3], GPT_Prompt_3() });
+	promptsContents.clear();
+	promptsContents.push_back(doCreateGptPrompt0());
+	promptsContents.push_back(doCreateGptPrompt1());
+	promptsContents.push_back(doCreateGptPrompt2());
+	promptsContents.push_back(doCreateGptPrompt3());
 
-	setGptPrompt(3);//default
+	//indexPrompt = indexPrompt;
+	setGptPrompt(indexPrompt);
 }
 
 //--------------------------------------------------------------
@@ -264,16 +283,19 @@ void ofApp::setGptPrompt(int index)
 
 	ui.AddToLog("setGptPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
 
-	if (index > prompts.size() - 1) {
+	if (index > promptsContents.size() - 1) {
 		ui.AddToLog("Index " + ofToString(index) + " out of range!", OF_LOG_ERROR);
 		return;
 	}
 
-	indexPrompt = index;
-	//promptName = ofToString(promptsNames[indexPrompt]);
-	promptName = ofToString(prompts[indexPrompt].first);
-	strPrompt = prompts[indexPrompt].second;
+	if (indexPrompt != index) indexPrompt = index;
+	
+	promptName = ofToString(promptsNames[indexPrompt]);
+	strPrompt = promptsContents[indexPrompt];
+	//promptName = ofToString(prompts[indexPrompt].first);
+	//strPrompt = prompts[indexPrompt].second;
 
+	// Set Role prompt
 	chatGpt.setSystemMessage(strPrompt);
 
 	ui.AddToLog("Prompt: " + promptName, OF_LOG_VERBOSE);
@@ -291,29 +313,6 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 		bigTextInput.bGui_LockMove = bLock;
 	}
 
-	else if (n == bWaitingGpt.getName())
-	{
-		if (bWaitingGpt) bigTextInput.bWaiting = bWaitingGpt;
-	}
-	else if (n == indexPrompt.getName())
-	{
-		setGptPrompt(indexPrompt);
-	}
-	else if (n == bModeConversation.getName())
-	{
-		//workflow
-		if (bModeConversation) {
-			subs.bGui = 0;
-			subs.bGui_List = 0;
-			subs.bGui_Paragraph = 0;
-		}
-	}
-
-	//else if (n == bWaitingGpt.getName())
-	//{
-	//	bigTextInput.bWaiting = bWaitingGpt;
-	//}
-
 	else if (n == ui.bGui_GameMode.getName())
 	{
 		if (ui.bGui_GameMode) {
@@ -328,6 +327,46 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 			bModeConversation = 1;
 			editorResponse.bGui = 0;
 		}
+	}
+
+	else if (n == bWaitingGpt.getName())
+	{
+		if (bWaitingGpt) bigTextInput.bWaiting = bWaitingGpt;
+	}
+	else if (n == bModeConversation.getName())
+	{
+		//workflow
+		if (bModeConversation) {
+#ifdef USE_SURF_SUBTITLES
+			subs.bGui = 0;
+			subs.bGui_List = 0;
+			subs.bGui_Paragraph = 0;
+#endif
+		}
+	}
+
+	//else if (n == bWaitingGpt.getName())
+	//{
+	//	bigTextInput.bWaiting = bWaitingGpt;
+	//}
+
+	// Prompts
+
+	else if (n == indexPrompt.getName())
+	{
+		setGptPrompt(indexPrompt);
+	}
+	else if (n == amountResultsPrompt.getName())
+	{
+		setupGptPrompts();
+	}
+	else if (n == indexTagWord.getName())
+	{
+		tagWord = tags[indexTagWord.get()];
+	}
+	else if (n == tagWord.getName())
+	{
+		setupGptPrompts();
 	}
 }
 
@@ -388,7 +427,13 @@ void ofApp::drawBg()
 
 		// Use color from subtitler when no flash
 		if (v > 0) ofClear(bgMin + (255 - bgMin) * v);
-		else ofClear(subs.getColorBg());
+		else {
+#ifdef USE_SURF_SUBTITLES
+			ofClear(subs.getColorBg());
+#else
+			ofClear(64);
+#endif
+		}
 	}
 }
 
@@ -398,7 +443,9 @@ void ofApp::draw()
 	// Bg
 	drawBg();
 
+#ifdef USE_SURF_SUBTITLES
 	subs.draw();
+#endif
 
 	//--
 
@@ -452,6 +499,12 @@ void ofApp::drawImGuiMain()
 		}
 		ui.AddSpacingBigSeparated();
 
+		if (ui.isGameMode()) {
+			ui.AddLabel("Font Size", 1);
+			ui.DrawWidgetsFonts(sizeFontConv, 0);
+			ui.AddSpacingSeparated();
+		}
+
 		//--
 
 		if (!ui.isGameMode()) {
@@ -466,11 +519,11 @@ void ofApp::drawImGuiMain()
 				ui.AddLabelBig("MODEL");
 				ui.Add(model, OFX_IM_TEXT_DISPLAY);
 
-				if (ui.AddButton("Restart"))
+				if (ui.AddButton("Restart", OFX_IM_BUTTON))
 				{
 					setupGpt();
 				}
-				if (ui.AddButton("ResetIP"))
+				if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
 				{
 					doGptResetEndpointIP();
 				}
@@ -504,11 +557,9 @@ void ofApp::drawImGuiMain()
 			// Clear
 			doClear();
 		}
-
 		if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
 			doGptRegenerate();
 		}
-
 		ui.AddSpacingSeparated();
 
 		if (!ui.isGameMode()) {
@@ -516,22 +567,23 @@ void ofApp::drawImGuiMain()
 			ui.AddSpacing();
 
 			ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-			if (ui.isMaximized()) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
-			ui.AddSpacing();
-		}
-
-		if (ui.isGameMode()) {
-			ui.AddLabel("FontSize", 1);
-			ui.DrawWidgetsFonts(sizeFontConv);
+			if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
 			ui.AddSpacingSeparated();
 		}
 
 		ui.AddLabel("Role Prompt", 1);
+		//ui.PushFont(SurfingFontTypes(1));
+		//ui.AddTooltip(strPrompt);
+		//ui.PopFont();
+		ui.AddCombo(indexPrompt, promptsNames);
 		ui.PushFont(SurfingFontTypes(1));
 		ui.AddTooltip(strPrompt);
 		ui.PopFont();
-		ui.AddCombo(indexPrompt, promptsNames);
-		ui.AddSpacing();
+		ui.AddCombo(indexTagWord, tags);
+		//ui.Add(indexTagWord);
+		//ui.AddLabel(tagWord);
+		ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+		ui.AddSpacingSeparated();
 
 		//--
 
@@ -550,7 +602,7 @@ void ofApp::drawImGuiMain()
 					if (ui.AddButton("Reset window")) {
 						bResetWindowConversation = 1;
 					}
-					ui.DrawWidgetsFonts(sizeFontConv);
+					ui.DrawWidgetsFonts(sizeFontConv, 0);
 					ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
 					s = "Last block will blink";
 					ui.AddTooltip(s);
@@ -558,7 +610,7 @@ void ofApp::drawImGuiMain()
 					s = "Last block will be bigger";
 					ui.AddTooltip(s);
 				}
-	}
+			}
 			ui.AddSpacing();
 			//ui.Add(bGui_GptLastReply, OFX_IM_TOGGLE_ROUNDED_MINI);
 
@@ -582,15 +634,15 @@ void ofApp::drawImGuiMain()
 #endif
 			ImSpinner::Spinner(bWaitingGpt, typeSpin);
 			ui.AddSpacingBigSeparated();
-}
+		}
 
 		//--
 
 		{
 #ifdef USE_SURF_TTF
-			s = "TTS";
+			s = "Voice";
 			ui.AddSpacingSeparated();
-			ui.AddLabelHuge(s);
+			ui.AddLabelBig(s, 1);
 			ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
 			if (TTS.bEnable) {
 				if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
@@ -629,6 +681,7 @@ void ofApp::drawImGuiMain()
 
 		if (!ui.isGameMode())
 			if (!bModeConversation) {
+#ifdef USE_SURF_SUBTITLES
 				ui.AddSpacingBigSeparated();
 				ui.AddLabelHuge("Titles");
 				ui.AddSpacing();
@@ -668,16 +721,19 @@ void ofApp::drawImGuiMain()
 					}
 					//ui.PopFont();
 				}
+#endif
 			}
 
 		ui.EndWindow();
-}
-}
+			}
+			}
 
 //--------------------------------------------------------------
 void ofApp::drawImGui()
 {
+#ifdef USE_SURF_SUBTITLES
 	subs.drawGui();
+#endif
 
 	ui.Begin();
 	{
@@ -721,15 +777,17 @@ void ofApp::drawImGui()
 #endif
 			//--
 
+#ifdef USE_SURF_SUBTITLES
 			subs.drawImGui();
+#endif
 		}
 
 		//--
 
 		drawImGuiConversation(ui);
-	}
+		}
 	ui.End();
-}
+	}
 
 /*
 //--------------------------------------------------------------
@@ -796,7 +854,10 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	}
 
 	float scrollbarSize = ImGui::GetStyle().ScrollbarSize;
-	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbarSize * 1.25f); // scale the scrollbar size
+	float scrollbarRatio = 1.4f;
+	//float ratio = 1.25f;
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbarSize * scrollbarRatio);
+	// scale the scrollbar size
 
 	if (ui.BeginWindow(bGui_GptConversation, window_flags))
 	{
@@ -858,6 +919,8 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	ImGui::PopStyleVar();
 }
 
+
+#ifdef USE_SURF_SUBTITLES
 //--------------------------------------------------------------
 void ofApp::doPopulateText(string s)
 {
@@ -879,9 +942,11 @@ void ofApp::doPopulateText(string s)
 	//ofColor c = ofColor(subs.getColorText(), 255);
 	//ui.AddLogTag(c);
 
+#ifdef USE_SURF_SUBTITLES
 	//ofLogNotice() << s;
 	subs.doSetTextSlideStart(s);
 	ui.AddToLog(s);
+#endif
 
 	// Spacing
 	for (size_t i = 0; i < 10; i++)
@@ -900,6 +965,7 @@ void ofApp::doPopulateTextBlocks() {
 void ofApp::doClearSubsList() {
 	subs.doClearList();
 }
+#endif
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
@@ -946,6 +1012,7 @@ void ofApp::keyPressed(int key)
 
 	//--
 
+#ifdef USE_SURF_SUBTITLES
 	else if (key == 'e') { subs.setToggleEdit(); }
 	//else if (key == 'l') { subs.setToggleLive(); }
 	//else if (key == 'g') { subs.setToggleVisibleGui(); }
@@ -956,6 +1023,7 @@ void ofApp::keyPressed(int key)
 	//else if (key == OF_KEY_LEFT) { subs.setSubtitlePrevious(); }
 	//else if (key == OF_KEY_RIGHT) { subs.setSubtitleNext(); }
 	//else if (key == OF_KEY_BACKSPACE) { subs.setSubtitleRandomIndex(); };
+#endif
 
 	//--
 
@@ -1042,7 +1110,7 @@ void ofApp::drawWidgetsEditor()
 		editorInput.clearText();
 #endif
 	}
-}
+	}
 
 //--------------------------------------------------------------
 void ofApp::doGptSendMessage(string message) {
@@ -1157,11 +1225,15 @@ void ofApp::doGptGetMessage()
 
 		// Build slides
 		if (!bModeConversation) {
+
+#ifdef USE_SURF_SUBTITLES
 			if (bModeOneSlide) subs.doBuildDataTextOneSlideOnly(textLastResponse);
 			else subs.doBuildDataText(textLastResponse);
+#endif
 		}
 
 		/*
+#ifdef USE_SURF_SUBTITLES
 		//TODO:
 		//there's no new line \n marks. so we assume the blocks will be numbered 1., 2., 3. etc
 		size_t sz = ofxSurfingHelpers::countNewlines(textLastResponse);
@@ -1173,6 +1245,7 @@ void ofApp::doGptGetMessage()
 		else {//we found \n tags. so we assume blocks ends with \n.
 			subs.doBuildDataTextBlocks(textLastResponse);
 		}
+#endif
 		*/
 
 		//--
@@ -1187,7 +1260,7 @@ void ofApp::doGptGetMessage()
 #ifdef USE_SURF_TTF
 		TTS.send(textLastResponse);
 #endif
-	}
+		}
 	else // Error
 	{
 		//tuple<string, ofxChatGPT::ErrorCode> m = ofxChatGPT::getMessage();
@@ -1216,7 +1289,7 @@ void ofApp::doGptGetMessage()
 
 	// focus in text input
 	bigTextInput.setFocus();
-}
+	}
 
 //--------------------------------------------------------------
 void ofApp::doRandomInput()
@@ -1224,7 +1297,9 @@ void ofApp::doRandomInput()
 	ui.AddToLog("doRandomInput()", OF_LOG_WARNING);
 
 	//workflow
+#ifdef USE_SURF_SUBTITLES
 	doClearSubsList();
+#endif
 
 	size_t sz = 9;
 	float r = ofRandom(sz);
@@ -1377,7 +1452,9 @@ void ofApp::doAttendCallbackTextInput()
 
 	//workflow
 	//clear
+#ifdef USE_SURF_SUBTITLES
 	doClearSubsList();
+#endif
 
 	if (!bModeConversation) {
 #ifdef USE_EDITOR_RESPONSE
@@ -1465,7 +1542,9 @@ void ofApp::doClear()
 
 	jConversationHistory.clear();
 
+#ifdef USE_SURF_SUBTITLES
 	doClearSubsList();
+#endif
 
 	textLastResponse = "";
 

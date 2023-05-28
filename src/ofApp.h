@@ -6,6 +6,8 @@
 
 	TODO
 
+	scroll tween
+
 	textInput bubble
 		fix clear. make button bigger
 		add wait spin
@@ -43,23 +45,26 @@
 //#define USE_EDITOR_INPUT
 #define USE_EDITOR_RESPONSE
 #define USE_SURF_TTF
+//#define USE_SURF_SUBTITLES
 
 //--
 
 #include "ofMain.h"
 
-#include "ofxSurfingTextSubtitle.h"
-#include "ofxSurfingImGui.h"
-#include "surfingTextEditor.h"
-#include "BigTextInput.h"
 #include "ChatThread.h"
+
+#include "ofxSurfingHelpers.h"
+#include "surfingStrings.h"
 #include "surfingSceneTesters.h"
 
+#include "ofxSurfingImGui.h"
+#include "BigTextInput.h"
 #include "Spinners2.h"
-//#include "imspinner.h"
+#include "surfingTextEditor.h"
 
-#include "ofxWindowApp.h"
-
+#ifdef USE_SURF_SUBTITLES
+#include "ofxSurfingTextSubtitle.h"
+#endif
 #ifdef USE_WHISPER
 #include "surfingWhisper.h"
 #endif
@@ -67,12 +72,15 @@
 #include "ofxSurfingTTS.h"
 #endif
 
+#include "ofxWindowApp.h"
+
 #include <curl/curl.h>
 
 class ofApp : public ofBaseApp
 {
 public:
 	void setup();
+	void setupParams();
 	void update();
 	void draw();
 	void drawBg();
@@ -88,17 +96,18 @@ public:
 	ofxSurfingGui ui;
 	void drawImGui();
 	void drawImGuiMain();
-	//void drawImGuiReply(ofxSurfingGui& ui);
 	void drawImGuiConversation(ofxSurfingGui& ui);
 	bool bResetWindowConversation = 0;
 
 	bool bFlagGoBottom = 0;
 
+#ifdef USE_SURF_SUBTITLES
 	ofxSurfingTextSubtitle subs;
 	string path;
 	void doPopulateText(string s = "");
 	void doPopulateTextBlocks();
 	void doClearSubsList();
+#endif
 
 	ChatThread chatGpt;
 	void setupGpt();
@@ -176,53 +185,58 @@ public:
 
 	//--
 
+	// Prompts and Roles
+
 	void setupGptPrompts();
 	void doSwapGptPrompt();
 
+	ofParameterGroup paramsPrompts{ "Prompts" };
 	string strPrompt;
 	ofParameter<int> indexPrompt{ "Prompt", 0, 0, 3 };
 	string promptName;
-	vector<pair<string, string> > prompts;
 	vector<string> promptsNames;
+	vector<string> promptsContents;
 	void setGptPrompt(int index);
-
-	// "10 short sentences."
-	static string GPT_Prompt_0() {
-		return R"(I want you to act as a music band advertiser. 
-You will create a campaign to promote that band.
-That campaign consists of 10 short sentences.
-These sentences must define the band's career highlights, 
-the best albums or the more important musicians members.
-The sentences will be short: less than 5 words each sentence.
-)";
-	}
-
-	// "10 words list."
-	static string GPT_Prompt_1() {
-		return R"(I want you to act as a music band critic. 
-I will pass you a band music name. You will return a list of 10 words.
-You will only reply with that words list, and nothing else. 
-Words will be sorted starting from less to more relevance.
-The format of the response, will be with one line per each word.
-These lines will be starting with the first char uppercased, 
-and without a '.' at the end of the line, just include the break line char.
-)";
-	}
-
-	// "10 Similar bands"
-	static string GPT_Prompt_2() {
-		return R"(I want you to act as a music critic.
-As a LastFm maintainer.
-I will give you a band name. You will list the 10 more similar bands.
-You will only reply that band names list, and nothing else. 
-But you must sort that bands, from older to newer. 
-)";
-	}
+	ofParameter<int> amountResultsPrompt{ "Amount", 10, 1, 100 };
+	vector<string> tags{ "music band", "novelist", "screenwriter", "film director" };
+	ofParameter<int> indexTagWord{ "Tag", 0, 0, tags.size() - 1 };
+	ofParameter<string> tagWord{ "Tag Word", "music band" };
 
 	// "Default"
-	static string GPT_Prompt_3() {
-		return R"(Act as your default ChatGPT behavior following the conversation.
-)";
+	static string doCreateGptPrompt0() {
+		return R"(Act as your default ChatGPT behavior \nfollowing the conversation.)";
+	}
+
+	// "Short sentences from an advertiser."
+	string doCreateGptPrompt1() {
+		string s0 = "From now on, I want you to act as a " + tagWord.get() + " advertiser.\n";
+		string s1 = "You will create a campaign to promote that " + tagWord.get() + "\n";
+		string s2 = "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
+		s2 += "These sentences must define " + tagWord.get() + "'s career highlights, the best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
+		s2 += "The sentences will be short: less than 5 words each sentence.";
+		return string(s0 + s1 + s2);
+	}
+
+	// "Words list from a critic."
+	string doCreateGptPrompt2() {
+		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get() + " name.\n";
+		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
+		string s2 = R"(You will only reply with that words list, and nothing else. Words will be sorted starting from less to more relevance.
+The format of the response, will be with one line per each word. These lines will be starting with the first char uppercased, 
+and without a '.' at the end of the line, just include the break line char.)";
+		return string(s0 + s1 + s2);
+	}
+
+	// "Similar authors from a critic."
+	string doCreateGptPrompt3() {
+		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get()
+			+ " name. ";
+		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
+		string s2 = R"(You will only reply with that words list, and nothing else, no explanations. 
+Words will be sorted starting from less to more relevance. 
+The format of the response, will be with one line per each word. These lines will be starting with the first char uppercased, 
+and without a '.' at the end of the line, just include the break line char.)";
+		return string(s0 + s1 + s2);
 	}
 
 	//--
