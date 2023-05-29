@@ -1,30 +1,9 @@
 ﻿#include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup()
+void ofApp::setupInputText()
 {
 	ofLogNotice(__FUNCTION__);
-
-	ofAddListener(ofEvents().windowResized, this, &ofApp::windowResized);
-
-#if 1
-	//w.doReset();
-	//ofxSurfingHelpers::setMonitorsLayout(1, true, true);
-#endif
-
-	string s = "surfCHAT";
-	ofSetWindowTitle(s);
-
-	bGui.set("surfCHAT", true);
-
-	//--
-
-	////ui.setImGuiViewPort(true);
-	//ui.setup();
-
-	//--
-
-	// Text input
 
 	textInput.makeReferenceTo(bigTextInput.textInput);
 	eTextInput = textInput.newListener([this](string& s)
@@ -49,6 +28,11 @@ void ofApp::setup()
 	callback_t myFunctionDraw = std::bind(&ofApp::drawWidgetsToTextInput, this);
 	bigTextInput.setDrawWidgetsFunction(myFunctionDraw);
 
+	//TODO:
+	// Extra widget to insert into the text input widget, context
+	callback_t myFunctionDrawContext = std::bind(&ofApp::drawWidgetsToTextInputContext, this);
+	//bigTextInput.setDrawWidgetsFunctionContext(myFunctionDrawContext);
+
 	// Keys
 	callback_t myFunctionCallbackKeys = std::bind(&ofApp::doAttendCallbackKeys, this);
 	bigTextInput.setFunctionCallbackKeys(myFunctionCallbackKeys);
@@ -56,6 +40,34 @@ void ofApp::setup()
 	// Link toggles
 	bigTextInput.bDebug.makeReferenceTo(ui.bDebug);
 	////bigTextInput.bWaiting.makeReferenceTo(bWaitingGpt);
+}
+
+//--------------------------------------------------------------
+void ofApp::setup()
+{
+	ofLogNotice(__FUNCTION__);
+
+	ofAddListener(ofEvents().windowResized, this, &ofApp::windowResized);
+
+#if 1
+	//w.doReset();
+	//ofxSurfingHelpers::setMonitorsLayout(1, true, true);
+#endif
+
+	string s = "surfCHAT";
+	ofSetWindowTitle(s);
+
+	bGui.set("surfCHAT", true);
+
+	//--
+
+	////ui.setImGuiViewPort(true);
+	//ui.setup();
+
+	//--
+
+	// Text input
+	setupInputText();
 
 	bWaitingGpt.setSerializable(0);
 
@@ -203,7 +215,7 @@ void ofApp::setupSounds()
 		ofSoundPlayer sk;
 		sk.load(p + n);
 		sk.setVolume(1.f);
-		sk.setMultiPlay(1);
+		sk.setMultiPlay(0);
 		soundsKeys.push_back(sk);
 	}
 
@@ -248,7 +260,8 @@ void ofApp::startupDelayed()
 
 	//--
 
-	ofxSurfingHelpers::load(params);
+	g.addGroup(params);
+	//ofxSurfingHelpers::load(params);
 }
 
 //--------------------------------------------------------------
@@ -338,19 +351,16 @@ void ofApp::setupGptPrompts()
 
 	// Create prompts
 	promptsNames.clear();
-	promptsNames.push_back("Default conversation.");
 
-	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " short sentences from a " + tagWord + " advertiser.");
-	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " words that define a " + tagWord + " from a critic.");
-	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " other similar " + tagWord + " from a critic.");
-
+	//promptsNames.push_back("Default conversation.");
 	//promptsNames.push_back(ofToString("Sentences from a " + tagWord + " advertiser.");
 	//promptsNames.push_back(ofToString("Words that define a " + tagWord + " from a critic.");
 	//promptsNames.push_back(ofToString("Other similar " + tagWord + " from a critic.");
 
-	promptsNames.push_back(ofToString("Sentences from a " + tagWord));
-	promptsNames.push_back(ofToString("Words that define a " + tagWord));
-	promptsNames.push_back(ofToString("Other similar " + tagWord));
+	promptsNames.push_back("Default");
+	promptsNames.push_back(ofToString("Sentences"));
+	promptsNames.push_back(ofToString("Words"));
+	promptsNames.push_back(ofToString("Other"));
 
 	indexPrompt.setMax(promptsNames.size() - 1);
 
@@ -465,6 +475,11 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 	if (n == indexPrompt.getName())
 	{
 		doSetGptPrompt(indexPrompt);
+
+		//workflow
+		if (textHistory.size() > 0) {
+			doGptSendMessage(textHistory.back());
+		}
 	}
 }
 
@@ -587,6 +602,30 @@ void ofApp::drawImGuiMain()
 	if (ui.BeginWindow(bGui))
 	{
 		//TODO:
+		/*
+		{
+			//static char name[32] = "Label1";
+			//char buf[64];
+			//sprintf(buf, "Button: %s###Button", name); // ### operator override ID ignoring the preceding label
+			//ImGui::Button(buf);
+			ui.AddButton("A");
+			if (ImGui::BeginPopupContextItem())
+			{
+				ImGui::SeparatorText("Menu");
+
+				//ImGui::Text("Edit name:");
+				//ImGui::InputText("##edit", name, IM_ARRAYSIZE(name));
+				ui.AddMinimizerToggle();
+				ui.AddDebugToggle();
+				ui.AddExtraToggle();
+				if (ImGui::Button("Close"))
+					ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+			}
+		}
+		*/
+
+		//TODO:
 		if (0)
 			if (ofGetFrameNum() % 120 == 0) {
 				// Bring "My Window" to the top of the z-order if it's not already in the front
@@ -624,14 +663,15 @@ void ofApp::drawImGuiMain()
 			ui.DrawWidgetsFonts(sizeFontConv, 0);
 			ui.AddSpacingSeparated();
 
-			if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
-				bFlagGoTop = 1;
-			}
-			ui.SameLine();
-			if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
-				bFlagGoBottom = 1;
-			}
-			ui.AddSpacingSeparated();
+			//ImGui::SeparatorText("Scroll");
+			//if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
+			//	bFlagGoTop = 1;
+			//}
+			//ui.SameLine();
+			//if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
+			//	bFlagGoBottom = 1;
+			//}
+			//ui.AddSpacingSeparated();
 
 			//ui.AddLabel("Colors", 1);
 			if (ui.BeginTree("Colors")) {
@@ -661,6 +701,16 @@ void ofApp::drawImGuiMain()
 			}
 			ui.AddSpacingSeparated();
 
+			//ui.AddCombo(indexPrompt, promptsNames);
+			//ui.PushFont(SurfingFontTypes(1));
+			//ui.AddTooltip(strPrompt);
+			//ui.PopFont();
+			//if (indexPrompt != 0) {
+			//	ui.AddCombo(indexTagWord, tags);
+			//	ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+			//}
+
+			//ui.AddSpacing();
 			ui.AddCombo(indexPrompt, promptsNames);
 			ui.PushFont(SurfingFontTypes(1));
 			ui.AddTooltip(strPrompt);
@@ -1171,24 +1221,24 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 				ImGui::SetScrollY(end_scroll_y);
 				window->DC.CursorPos.y = ImGui::GetContentRegionMax().y;
 			}
-##elif(0)
-			//const float scroll_amount = ImGui::GetScrollY() * 0.1;
-			//float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
-			//ImGui::SetScrollY(new_scroll_y);
+			##elif(0)
+				//const float scroll_amount = ImGui::GetScrollY() * 0.1;
+				//float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
+				//ImGui::SetScrollY(new_scroll_y);
 
-			//cout << "ImGui::GetScrollY():" << ImGui::GetScrollY() << endl;
+				//cout << "ImGui::GetScrollY():" << ImGui::GetScrollY() << endl;
 
 
-			//float y = ImGui::GetScrollY();
-			//float step = 0.1f;
-			//if (y < 1.0f) y += step;
-			//else if (y >= 1.f) {
-			//	bFlagGoBottom = 0;//done
-			//	y = 1.f;
-			//	cout << "y:" << y << endl;
-			//}
-			////ImGui::SetScrollY(y);
-			//ImGui::SetScrollHereY(y);
+				//float y = ImGui::GetScrollY();
+				//float step = 0.1f;
+				//if (y < 1.0f) y += step;
+				//else if (y >= 1.f) {
+				//	bFlagGoBottom = 0;//done
+				//	y = 1.f;
+				//	cout << "y:" << y << endl;
+				//}
+				////ImGui::SetScrollY(y);
+				//ImGui::SetScrollHereY(y);
 		}
 
 		//if (bFlagGoBottom)
@@ -1287,12 +1337,12 @@ void ofApp::doClearSubsList() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
-	//TODO:
-	//if (ui.isOverInputText())
-	if (bigTextInput.isOverInputText())
-	{
-		doAttendCallbackKeys();
-	}
+	////TODO:
+	////if (ui.isOverInputText())
+	//if (bigTextInput.isOverInputText())
+	//{
+	//	doAttendCallbackKeys();
+	//}
 
 	if (ui.isOverInputText()) return; // skip when editing
 	if (chatGpt.isWaiting()) return;
@@ -1308,6 +1358,7 @@ void ofApp::keyPressed(int key)
 
 	else if (key == OF_KEY_PAGE_UP) { bFlagGoTop = 1; }
 	else if (key == OF_KEY_PAGE_DOWN) { bFlagGoBottom = 1; }
+
 	//else if (key == OF_KEY_UP) { bFlagGoTopStp = 1; }
 	//else if (key == OF_KEY_DOWN) { bFlagGoBottomStp = 1; }
 
@@ -1321,32 +1372,36 @@ void ofApp::keyPressed(int key)
 	else if (key == OF_KEY_BACKSPACE) { doClear(); }
 
 	// Resend last
-	else if (key == OF_KEY_RETURN) { doGptResend(); }
+	//else if (key == OF_KEY_RETURN) { doGptResend(); }
 
 	//// Regenerate
 	//else if (key == OF_KEY_RETURN) { doGptRegenerate(); }
 	//else if (key == ' ') { doGptRegenerate(); }
 
 	//TODO:
-	//browse history
+	// Browse history
 	if (key == OF_KEY_LEFT) {
+		if (textHistory.size() == 0) return;
 		i_hist--;
 		i_hist = MAX(0, i_hist);
 		i_hist = MIN(textHistory.size() - 1, i_hist);
 		string s = textHistory[i_hist];
 		bigTextInput.setText(s);
 		textInput.setWithoutEventNotifications(s);
+		//bigTextInput.setFocus();
 	}
 	else if (key == OF_KEY_RIGHT) {
+		if (textHistory.size() == 0) return;
 		i_hist++;
 		i_hist = MAX(0, i_hist);
 		i_hist = MIN(textHistory.size() - 1, i_hist);
 		string s = textHistory[i_hist];
 		bigTextInput.setText(s);
 		textInput.setWithoutEventNotifications(s);
+		//bigTextInput.setFocus();
 	}
 
-	//TODO:
+	//TODO: tester
 	if (key == '1') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
 	if (key == '2') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
 	if (key == '3') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
@@ -1662,7 +1717,7 @@ void ofApp::doGptGetMessage()
 
 	// focus in text input
 	bigTextInput.setFocus();
-		}
+}
 
 //--------------------------------------------------------------
 void ofApp::doRandomInput()
@@ -1721,7 +1776,7 @@ void ofApp::exit()
 
 	//sounds[0].play();//can't be played bc just closes
 
-	ofxSurfingHelpers::save(params);
+	//ofxSurfingHelpers::save(params);
 
 	ofJson configJson;
 	configJson["apiKey"] = apiKey;
@@ -1994,13 +2049,54 @@ void ofApp::doAttendCallbackKeys()
 //--------------------------------------------------------------
 void ofApp::drawWidgetsToTextInput()
 {
-	//ofLogNotice(__FUNCTION__);
-#if(1)
-	//ui.SameLine();
-	//ui.AddSpacingX(10);
-	//ui.AddSpacingY(5);
+	ui.AddSpacingY(3);
 	ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
-#else
-	ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+}
+
+//--------------------------------------------------------------
+void ofApp::drawWidgetsToTextInputContext()
+{
+	//ui.AddButton("A");
+
+	ui.PushFont(SurfingFontTypes(1));
+
+		//TODO:
+		float w = 300;
+		float h = 0;
+		ImGui::SetNextWindowContentSize(ImVec2(w, h));
+		//ImGui::SetNextWindowSizeConstraints(ImVec2(140, 400), ImVec2(w, 400));
+
+	if (ImGui::BeginPopupContextItem("My Context Menu"))
+	{
+
+		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
+
+		//ui.Add(ui.bGui_GameMode, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
+		ui.DrawWidgetsFonts(sizeFontConv, 0);
+		if (ui.AddButton("Restart##3", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+		{
+			doGptRestart();
+		}
+		if (ui.AddButton("Clear##3", OFX_IM_BUTTON, 2))
+		{
+			doClear();
+		}
+		ui.AddCombo(indexPrompt, promptsNames);
+		ui.AddTooltip(strPrompt);
+
+		if (indexPrompt != 0) {
+			ui.AddCombo(indexTagWord, tags);
+			ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+		}
+
+#ifdef USE_SURF_TTF
+		ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
 #endif
+		ui.AddSpacing();
+		if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
+		ImGui::EndPopup();
+	}
+
+	ui.PopFont();
 }

@@ -2,13 +2,7 @@
 
 /*
 
-	WIP Example
-
 	TODO
-
-	scroll tween
-
-	add context menu for game mode
 
 	ui docking
 		add common menus to addon (exit, full screen, )
@@ -16,6 +10,13 @@
 		for different layouts
 
 	add ui menus: full screen, copy
+
+	fix TTS send lock update!
+		resend if error
+
+	scroll tween
+
+	add context menu for game mode, minimize, debug etc
 
 	gpt setup/restart, reconnect.
 		make new class SurfGPT.
@@ -50,6 +51,7 @@
 #include "ChatThread.h"
 
 #include "ofxSurfingHelpers.h"
+#include "ofxAutosaveGroupTimer.h"
 #include "surfingStrings.h"
 #include "surfingSceneTesters.h"
 
@@ -88,16 +90,18 @@ public:
 	void keyPressed(int key);
 
 	void setupParams();
+	void setupInputText();
 	void setupSounds();
 	void startup();
 	void startupDelayed();
 	void drawBg();
 
+	ofxSurfingGui ui;
+
 	ofParameter<bool> bGui;
 	ofParameterGroup params{ "surfCHAT" };
 	void Changed_Params(ofAbstractParameter& e);
 
-	ofxSurfingGui ui;
 	void drawImGui();
 	void drawImGuiMain();
 	void drawImGuiConversation(ofxSurfingGui& ui);
@@ -175,6 +179,7 @@ public:
 	void doAttendCallbackClear();
 	void doAttendCallbackKeys();
 	void drawWidgetsToTextInput();
+	void drawWidgetsToTextInputContext();
 
 	//--
 
@@ -214,12 +219,12 @@ public:
 
 	// Roles (system prompts)
 
-	// "Default"
+	// Default
 	static string doCreateGptRolePrompt0() {
 		return string("Act as your default ChatGPT behavior \nfollowing the conversation.");
 	}
 
-	// "Short sentences from an advertiser."
+	// Sentences
 	string doCreateGptRolePrompt1() {
 		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
 		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
@@ -229,21 +234,27 @@ public:
 		return string(s0 + s1 + s2);
 	}
 
-	// "Words list from a critic."
+	// Words
 	string doCreateGptRolePrompt2() {
 		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
 		s0 += "I will pass you a " + tagWord + " name.";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
-		string s2 = "You will only reply with that words list, and nothing else. \nWords will be sorted starting from less to more relevance. \nThe format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, and without a '.' at the end of the line, just include the break line char.";
+		string s2 = "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
+		s2 += "The format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \n";
+		//s2 += "and without a '.' at the end of the line, just include the break line char.";
+		s2 += "start each line with a number and a '.' starting at '1.'";
 		return string(s0 + s1 + s2);
 	}
 
-	// "Similar authors from a critic."
+	// Other similar
 	string doCreateGptRolePrompt3() {
 		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
 		s0 += "I will pass you a " + tagWord + " name. ";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " names of similar " + tagWord + "s creators.\n";
-		string s2 = "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \nThe format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \nand without a '.' at the end of the line, just include the break line char.";
+		string s2 = "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
+		s2 += "The format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \n";
+		//s2 += "and without a '.' at the end of the line, just include the break line char.";
+		s2 += "start each line with a number and a '.' starting at '1.'";
 		return string(s0 + s1 + s2);
 	}
 
@@ -294,6 +305,7 @@ public:
 	void doReset(bool bSilent = 0);
 
 	ofxWindowApp w;
+	ofxAutosaveGroupTimer g;
 
 	void windowResized(ofResizeEventArgs& resize)
 	{
