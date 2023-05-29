@@ -6,3 +6,5 @@ Taken from https://freesound.org/
 3.wav: 523763__matrixxx__select_granted_06.wav
 4.ogg: 264828__cmdrobot__text-message-or-videogame-jump.ogg
 5.mp3: 644953__craigscottuk__quiz-gameshow-correct-ring-01.mp3
+6.mp3: 580786__strikewhistler__single-clicks-keyboard-sound.mp3 
+(/keys)

@@ -8,30 +8,24 @@
 
 	scroll tween
 
-	layout text bubble / conversation as landscape/portrait.
-
-	textInput bubble
-		fix clear. make button bigger
-		add wait spin
+	add context menu for game mode
 
 	ui docking
 		add common menus to addon (exit, full screen, )
 		use modes like: conversation, prompt selector etc
 		for different layouts
+
+	add ui menus: full screen, copy
+
 	gpt setup/restart, reconnect.
 		make new class SurfGPT.
 		model and error/state
 
-	conversation window
-		auto scroll down when response (tween)
-		lock mode
-		auto go to text input when get response
-		make bigger scroll
+		add temperature, tokens..
 
 	fix < > slides
 		fix 1st/end slide.
 	add dual window 1: gui / 2: out
-	fix subtitle paragraph clamp. reset box centered
 	add prompts manager:
 		save on json file.
 		create prompt struct
@@ -43,11 +37,11 @@
 //--
 
 // Optional Modules
-#define USE_EDITOR_RESPONSE
 #define USE_SURF_TTF
-//#define USE_WHISPER
 //#define USE_SURF_SUBTITLES
 //#define USE_EDITOR_INPUT
+#define USE_EDITOR_RESPONSE
+//#define USE_WHISPER
 
 //--
 
@@ -109,7 +103,12 @@ public:
 	void drawImGuiConversation(ofxSurfingGui& ui);
 
 	bool bResetWindowConversation = 0;
+	void doResetWindowConvCheck();
+
 	bool bFlagGoBottom = 0;
+	bool bFlagGoTop = 0;
+	bool bFlagGoBottomStp = 0;
+	bool bFlagGoTopStp = 0;
 
 	//--
 
@@ -174,17 +173,8 @@ public:
 	ofEventListener eTextInput;
 	ofParameter<string> textInput{ "TextInput", "" };
 	void doAttendCallbackClear();
-	void drawWidgetsToTextInput()
-	{
-#if(1)
-		//ui.SameLine();
-		//ui.AddSpacingX(10);
-		//ui.AddSpacingY(5);
-		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
-#else
-		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
-#endif
-	}
+	void doAttendCallbackKeys();
+	void drawWidgetsToTextInput();
 
 	//--
 
@@ -208,18 +198,19 @@ public:
 
 	// Prompts and Roles
 	void setupGptPrompts();
+	void doRefreshGptPrompts();
 	void doSetGptPrompt(int index);
 	void doSwapGptPrompt();//next
 	ofParameterGroup paramsPrompts{ "Prompts" };
 	string strPrompt;
-	ofParameter<int> indexPrompt{ "IndexPrompt", 0, 0, 3 };
+	ofParameter<int> indexPrompt{ "IndexPrompt", 0, 0, 0 };
 	string promptName;
 	vector<string> promptsNames;
 	vector<string> promptsContents;
-	ofParameter<int> amountResultsPrompt{ "Amount", 10, 1, 100 };
-	vector<string> tags{ "music band", "book writer", "illustrator", "film director" };
+	ofParameter<int> amountResultsPrompt{ "Results", 10, 1, 100 };
+	vector<string> tags{ "music band", "book writer", "film director", "illustrator", "painter" , "philosopher" };
 	ofParameter<int> indexTagWord{ "Tag", 0, 0, tags.size() - 1 };
-	ofParameter<string> tagWord{ "Tag Word", "-1" };
+	string tagWord = "-1";
 
 	// Roles (system prompts)
 
@@ -230,33 +221,29 @@ public:
 
 	// "Short sentences from an advertiser."
 	string doCreateGptRolePrompt1() {
-		string s0 = "From now on, I want you to act as a " + tagWord.get() + " advertiser.\n";
-		string s1 = "You will create a campaign to promote that " + tagWord.get() + "\n";
-		string s2 = "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
-		s2 += "These sentences must define " + tagWord.get() + "'s career highlights, the best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
-		s2 += "The sentences will be short: less than 5 words each sentence.";
+		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
+		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
+		s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
+		s1 += "These sentences must define " + tagWord + "'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
+		string s2 = "The sentences will be short: less than 7 words each sentence.";
 		return string(s0 + s1 + s2);
 	}
 
 	// "Words list from a critic."
 	string doCreateGptRolePrompt2() {
-		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get() + " name.\n";
+		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
+		s0 += "I will pass you a " + tagWord + " name.";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
-		string s2 = R"(You will only reply with that words list, and nothing else. Words will be sorted starting from less to more relevance.
-The format of the response, will be with one line per each word. These lines will be starting with the first char uppercased, 
-and without a '.' at the end of the line, just include the break line char.)";
+		string s2 = "You will only reply with that words list, and nothing else. \nWords will be sorted starting from less to more relevance. \nThe format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, and without a '.' at the end of the line, just include the break line char.";
 		return string(s0 + s1 + s2);
 	}
 
 	// "Similar authors from a critic."
 	string doCreateGptRolePrompt3() {
-		string s0 = "I want you to act as a " + tagWord.get() + " critic. I will pass you a " + tagWord.get()
-			+ " name. ";
-		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
-		string s2 = R"(You will only reply with that words list, and nothing else, no explanations. 
-Words will be sorted starting from less to more relevance. 
-The format of the response, will be with one line per each word. These lines will be starting with the first char uppercased, 
-and without a '.' at the end of the line, just include the break line char.)";
+		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
+		s0 += "I will pass you a " + tagWord + " name. ";
+		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " names of similar " + tagWord + "s creators.\n";
+		string s2 = "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \nThe format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \nand without a '.' at the end of the line, just include the break line char.";
 		return string(s0 + s1 + s2);
 	}
 
@@ -265,9 +252,10 @@ and without a '.' at the end of the line, just include the break line char.)";
 	// Bg flash. set to 1 to start.
 	float v = 0;
 
-	ofParameter<int>typeSpin{ "typeSpin", 8, 0, 9 };
+	ofParameter<int>typeSpin{ "typeSpin", 0, 0, 0 };
 
 	vector<ofSoundPlayer> sounds;
+	vector<ofSoundPlayer> soundsKeys;
 
 	//--
 

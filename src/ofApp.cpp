@@ -49,15 +49,22 @@ void ofApp::setup()
 	callback_t myFunctionDraw = std::bind(&ofApp::drawWidgetsToTextInput, this);
 	bigTextInput.setDrawWidgetsFunction(myFunctionDraw);
 
+	// Keys
+	callback_t myFunctionCallbackKeys = std::bind(&ofApp::doAttendCallbackKeys, this);
+	bigTextInput.setFunctionCallbackKeys(myFunctionCallbackKeys);
+
 	// Link toggles
 	bigTextInput.bDebug.makeReferenceTo(ui.bDebug);
 	////bigTextInput.bWaiting.makeReferenceTo(bWaitingGpt);
 
 	bWaitingGpt.setSerializable(0);
 
+	//--
+
 	ui.setDisableStartupResetLayout();
 	ui.setup();
 	//ui.AddMinimizerXsToggle
+
 	//--
 
 #ifdef USE_SURF_SUBTITLES
@@ -123,6 +130,7 @@ void ofApp::setupParams()
 	params.add(bigTextInput.bGui);
 	params.add(ui.bGui_GameMode);
 	params.add(bLock);
+
 	params.add(colorBg);
 	params.add(colorAccent);
 	params.add(colorUser);
@@ -137,15 +145,16 @@ void ofApp::setupParams()
 	paramsConversations.add(sizeFontConv);
 	paramsConversations.add(bLastBigger);
 	paramsConversations.add(bLastBlink);
+	paramsConversations.add(bWaitingGpt);
 	params.add(paramsConversations);
 
-	params.add(bModeOneSlide);
+	params.add(bModeOneSlide);//for subtitles
+
+	typeSpin.setMax(ImSpinner::amountSpinners - 1);
 	params.add(typeSpin);
 
-	tagWord.setSerializable(0);
 	paramsPrompts.add(indexPrompt);
 	paramsPrompts.add(indexTagWord);
-	paramsPrompts.add(tagWord);
 	paramsPrompts.add(amountResultsPrompt);
 	params.add(paramsPrompts);
 
@@ -179,19 +188,31 @@ void ofApp::setupSounds()
 
 	ofSoundPlayer s4;//clear
 	s4.load("assets/sounds/4.ogg");
-	s4.setVolume(0.01f);
 	sounds.push_back(s4);
-	sounds.back().setVolume(0.01f);
 
 	ofSoundPlayer s5;//error
 	s5.load("assets/sounds/5.mp3");
 	sounds.push_back(s5);
+
+	// keys
+	string p = "assets/sounds/keys/";
+	soundsKeys.clear();
+	for (size_t i = 0; i < 9; i++)
+	{
+		string n = "keys-00" + ofToString(i) + ".wav";
+		ofSoundPlayer sk;
+		sk.load(p + n);
+		sk.setVolume(1.f);
+		sk.setMultiPlay(1);
+		soundsKeys.push_back(sk);
+	}
 
 	for (auto& s : sounds)
 	{
 		s.setVolume(1.f);
 		s.setMultiPlay(1);
 	}
+	sounds[4].setVolume(0.5);
 
 	sounds[0].play();
 }
@@ -204,7 +225,7 @@ void ofApp::startup()
 	setupGpt(0);
 
 	//TODO:
-	bigTextInput.typeWaiting = typeSpin;
+	//bigTextInput.typeWaiting = typeSpin;
 
 	//ui.ClearLogDefaultTags();
 
@@ -221,10 +242,11 @@ void ofApp::startupDelayed()
 {
 	ofLogNotice(__FUNCTION__);
 
-	setupGptPrompts();
-	doSetGptPrompt(indexPrompt);
+	doRefreshGptPrompts();
 
 	bDoneStartupDelayed = 1;
+
+	//--
 
 	ofxSurfingHelpers::load(params);
 }
@@ -300,6 +322,16 @@ void ofApp::setupGpt(bool bSilent)
 }
 
 //--------------------------------------------------------------
+void ofApp::doRefreshGptPrompts()
+{
+	ofLogNotice(__FUNCTION__);
+
+	tagWord = tags[indexTagWord.get()];
+	setupGptPrompts();
+	doSetGptPrompt(indexPrompt);
+}
+
+//--------------------------------------------------------------
 void ofApp::setupGptPrompts()
 {
 	ofLogNotice(__FUNCTION__);
@@ -307,9 +339,19 @@ void ofApp::setupGptPrompts()
 	// Create prompts
 	promptsNames.clear();
 	promptsNames.push_back("Default conversation.");
-	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " short sentences from a " + tagWord.get() + " advertiser.");
-	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " words from a " + tagWord.get() + " critic.");
-	promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " other similar from a " + tagWord.get() + " critic.");
+
+	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " short sentences from a " + tagWord + " advertiser.");
+	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " words that define a " + tagWord + " from a critic.");
+	//promptsNames.push_back(ofToString(amountResultsPrompt.get()) + " other similar " + tagWord + " from a critic.");
+
+	//promptsNames.push_back(ofToString("Sentences from a " + tagWord + " advertiser.");
+	//promptsNames.push_back(ofToString("Words that define a " + tagWord + " from a critic.");
+	//promptsNames.push_back(ofToString("Other similar " + tagWord + " from a critic.");
+
+	promptsNames.push_back(ofToString("Sentences from a " + tagWord));
+	promptsNames.push_back(ofToString("Words that define a " + tagWord));
+	promptsNames.push_back(ofToString("Other similar " + tagWord));
+
 	indexPrompt.setMax(promptsNames.size() - 1);
 
 	ofLogNotice(__FUNCTION__) << ofToString(promptsNames);
@@ -329,7 +371,7 @@ void ofApp::doSetGptPrompt(int index)
 	//if (indexPrompt == index) return;//skip if not changed
 
 	ofLogNotice(__FUNCTION__) << index;
-	sounds[5].play();
+	//sounds[5].play();
 
 	ui.AddToLog("doSetGptPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
 
@@ -380,6 +422,12 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 		}
 	}
 
+	//TODO:
+	else if (n == typeSpin.getName())
+	{
+		bigTextInput.typeWaiting = typeSpin;
+	}
+
 	else if (n == bWaitingGpt.getName())
 	{
 		bigTextInput.bWaiting = bWaitingGpt;
@@ -397,11 +445,6 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 		}
 	}
 
-	//else if (n == bWaitingGpt.getName())
-	//{
-	//	bigTextInput.bWaiting = bWaitingGpt;
-	//}
-
 	//--
 
 	//TODO: workaround to avoid starting calls...
@@ -415,16 +458,13 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 	}
 	else if (n == indexTagWord.getName())
 	{
-		tagWord.set(tags[indexTagWord.get()]);
+		tagWord = tags[indexTagWord.get()];
 		setupGptPrompts();
 		doSetGptPrompt(indexPrompt);
 	}
 	if (n == indexPrompt.getName())
 	{
 		doSetGptPrompt(indexPrompt);
-	}
-	else if (n == tagWord.getName())
-	{
 	}
 }
 
@@ -458,7 +498,7 @@ void ofApp::update()
 #endif
 
 #ifdef USE_SURF_TTF
-	if (TTS.isWaiting()) bigTextInput.bWaiting = 1;
+	//if (TTS.isWaiting()) bigTextInput.bWaiting = 1;
 #endif
 
 	//--
@@ -584,26 +624,39 @@ void ofApp::drawImGuiMain()
 			ui.DrawWidgetsFonts(sizeFontConv, 0);
 			ui.AddSpacingSeparated();
 
-			ui.AddLabel("Colors", 1);
-			ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-			ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-			ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-			ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
+				bFlagGoTop = 1;
+			}
+			ui.SameLine();
+			if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
+				bFlagGoBottom = 1;
+			}
 			ui.AddSpacingSeparated();
 
-			if (ui.AddButton("Restart##2", OFX_IM_BUTTON))
+			//ui.AddLabel("Colors", 1);
+			if (ui.BeginTree("Colors")) {
+				ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				ui.EndTree();
+			}
+			ui.AddSpacingSeparated();
+
+			if (ui.AddButton("Restart##1", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
 			{
 				doGptRestart();
 			}
-			if (ui.AddButton("Clear##2", OFX_IM_BUTTON))
+			if (ui.AddButton("Clear##1", OFX_IM_BUTTON, 2))
 			{
-				// Clear
 				doClear();
 			}
-			if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
+			if (ui.AddButton("Regen##1", OFX_IM_BUTTON, 2, 1))
+			{
 				doGptRegenerate();
 			}
-			if (ui.AddButton("Resend", OFX_IM_BUTTON)) {
+			if (ui.AddButton("Resend##1", OFX_IM_BUTTON, 2))
+			{
 				doGptResend();
 			}
 			ui.AddSpacingSeparated();
@@ -658,19 +711,20 @@ void ofApp::drawImGuiMain()
 			//ui.PopFont();
 #endif
 
-			if (ui.AddButton("Restart##2", OFX_IM_BUTTON))
+			if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
 			{
 				doGptRestart();
 			}
-			if (ui.AddButton("Clear##2", OFX_IM_BUTTON))
+			if (ui.AddButton("Clear##2", OFX_IM_BUTTON, 2))
 			{
-				// Clear
 				doClear();
 			}
-			if (ui.AddButton("Regenerate", OFX_IM_BUTTON)) {
+			if (ui.AddButton("Regen##2", OFX_IM_BUTTON, 2, 1))
+			{
 				doGptRegenerate();
 			}
-			if (ui.AddButton("Resend", OFX_IM_BUTTON)) {
+			if (ui.AddButton("Resend##2", OFX_IM_BUTTON, 2))
+			{
 				doGptResend();
 			}
 			ui.AddSpacingSeparated();
@@ -738,11 +792,11 @@ void ofApp::drawImGuiMain()
 					ui.AddLabelBig(s);
 				}
 #if(1)
-#if(0)
+#if(1)
 				if (ui.bDebug) {
 					ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
 					if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
-						bigTextInput.typeWaiting = typeSpin;
+						//bigTextInput.typeWaiting = typeSpin;
 					};
 				}
 #endif
@@ -877,7 +931,7 @@ void ofApp::drawImGui()
 	ui.Begin();
 	{
 		//TODO:
-		//ImSpinner::demoSpinners();
+		if (!ui.isGameMode() && ui.isDebug()) ImSpinner::demoSpinners();
 
 		//--
 
@@ -951,6 +1005,28 @@ void ofApp::drawImGuiReply(ofxSurfingGui& ui)
 */
 
 //--------------------------------------------------------------
+void ofApp::doResetWindowConvCheck()
+{
+	float gapy = 0;
+	float padx = 75;
+	float pady = 25;
+
+	float ho = 0;
+	ho += 2 * ImGui::GetStyle().WindowBorderSize;
+	ho += ui.getWidgetsHeightUnit();
+
+	//TODO: when text input is at the top half
+	float y = bigTextInput.getWindowRectangle().getBottom() + pady + gapy + ho;
+	float w = ofGetWidth() - 2 * padx;
+	float h = ofGetHeight() - y - pady;
+	float x = padx;
+
+	ImGui::SetNextWindowSize(ImVec2(w, h), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(x, y), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
+	if (bResetWindowConversation) bResetWindowConversation = 0;
+}
+
+//--------------------------------------------------------------
 void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 {
 	if (!bGui_GptConversation) return;
@@ -966,106 +1042,153 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	//--
 
 	// Reset
-	{
-		float padx = 100;
-		float pady = 50;
-		//float pady = ofGetHeight() * 0.15;
-		pady = MAX(pady, bigTextInput.getWindowRectangle().getBottom() + 50);
-		float w = ofGetWidth() - 2 * padx;
-		float h = ofGetHeight() - pady - 100;
-		float x = padx;
-		float y = pady;
-		ImGui::SetNextWindowSize(ImVec2(w, h), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowPos(ImVec2(x, y), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
-		if (bResetWindowConversation) bResetWindowConversation = 0;
-	}
+	doResetWindowConvCheck();
 
+	// scale the scrollbar size
 	float scrollbarSize = ImGui::GetStyle().ScrollbarSize;
 	float scrollbarRatio = 1.4f;
 	//float ratio = 1.25f;
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbarSize * scrollbarRatio);
-	// scale the scrollbar size
 
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, colorAccent.get());
-	ImVec4 ch(colorAccent.get().r/255.f, colorAccent.get().g / 255.f, colorAccent.get().b / 255.f, 0.5f);
+	ImVec4 ch(colorAccent.get().r / 255.f, colorAccent.get().g / 255.f, colorAccent.get().b / 255.f, 0.5f);
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ch);
+
+	//--
 
 	if (ui.BeginWindow(bGui_GptConversation, window_flags))
 	{
+		// Scroll control
+		{
+			float scrollY = ImGui::GetScrollY();
+
+			//TODO:
+			if (bFlagGoTop) {
+				bFlagGoTop = 0;
+				ImGui::SetScrollHereY(0.0f);
+			}
+
+			// Define the amount of scroll for each arrow key press
+			const float scroll_amount = 5 * ImGui::GetTextLineHeightWithSpacing();
+			// Check whether up or down arrow key is pressed
+			if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+			{
+				// Decrement the vertical scroll position
+				float new_scroll_y = ImGui::GetScrollY() - scroll_amount;
+				ImGui::SetScrollY(new_scroll_y);
+			}
+			else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+			{
+				// Increment the vertical scroll position
+				float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
+				ImGui::SetScrollY(new_scroll_y);
+			}
+		}
+
 		////TODO:
 		////send back
 		//bool isWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 		//ImGui::SetWindowFocus(nullptr);
 		//if(bLock) ImGui::SetWindowFocus(nullptr);
 
+		//--
+
 		//if (ui.isDebug()) ui.AddComboFontsSelector(sizeFontConv);
 		ui.PushFont(SurfingFontTypes(sizeFontConv.get()));
-
-		//--
 
 		// Colorized by roles
 
 		ImU32 c1 = ImGui::GetColorU32(colorUser.get());
 		ImU32 c2 = ImGui::GetColorU32(colorAssistant.get());
-		//ImU32 c2 = ImGui::GetColorU32(bigTextInput.getColor());
 
-		//try 
-		{
-			int i = 0;
-			for (auto& m : jConversationHistory) {
-				string role = m["message"]["role"].get<std::string>();
-				string content = m["message"]["content"].get<std::string>();
+		int i = 0;
+		for (auto& m : jConversationHistory) {
+			string role = m["message"]["role"].get<std::string>();
+			string content = m["message"]["content"].get<std::string>();
 
-				bool bLast = jConversationHistory.size() - 1 == i;
+			bool bLast = jConversationHistory.size() - 1 == i;
 
-				ImU32 c = (role == "user") ? c1 : c2;
-				ImGui::PushStyleColor(ImGuiCol_Text, c);
+			ImU32 c = (role == "user") ? c1 : c2;
+			ImGui::PushStyleColor(ImGuiCol_Text, c);
 
-				// Customize last text block
-				if (bLast) {
-					if (bLastBlink) ui.BeginBlinkText(true, 1);
-					if (bLastBigger) ui.PushFont(SurfingFontTypes(MAX(3, sizeFontConv.get() + 1)));
-				}
-
-				ImGui::TextWrapped("%s", content.c_str());
-
-				if (bLast) {
-					if (bLastBigger) ui.popStyleFont();
-					if (bLastBlink) ui.EndBlinkText();
-				}
-				ImGui::PopStyleColor();
-
-				i++;
+			// Customize last text block
+			if (bLast) {
+				if (bLastBlink) ui.BeginBlinkText(true, 1);
+				if (bLastBigger) ui.PushFont(SurfingFontTypes(MAX(3, sizeFontConv.get() + 1)));
 			}
+
+			ImGui::TextWrapped("%s", content.c_str());
+
+			if (bLast) {
+				if (bLastBigger) ui.popStyleFont();
+				if (bLastBlink) ui.EndBlinkText();
+			}
+			ImGui::PopStyleColor();
+
+			i++;
 		}
-		//catch (const std::exception& e) {
-		//	ofLogError("Error reading message history JSON data: ") << e.what();
-		//	ofLogError("JSON data that caused the exception: ") << jConversationHistory.dump();
-		//}
 
 		ui.PopFont();
 
-		//TODO:
-#if(0)
+		//--
+
+#if(1)
 		if (bFlagGoBottom) {
 			bFlagGoBottom = 0;
 			// Scroll to the bottom of the window
 			ImGui::SetScrollHereY(1.0f);
-	}
-#else
+		}
+#elif(0)
+		//TODO:
 		// Tween
 		if (bFlagGoBottom)
 		{
-			float y = ImGui::GetScrollY();
-			float step = 0.1f;
-			if (y < 1.0f) y += step;
-			else if (y >= 1.f) {
-				bFlagGoBottom = 0;//done
-				y = 1.f;
-				cout << "y:" << y << endl;
+			bFlagGoBottom = 0;
+
+			//if (ImGui::Button("Scroll to bottom"))
+			{
+				float duration = 1.0f; // Set the duration of the scrolling animation in seconds
+				ImGuiWindow* window = ImGui::GetCurrentWindow();
+				float start_scroll_y = ImGui::GetScrollY();
+				float end_scroll_y = ImGui::GetWindowHeight() + ImGui::GetWindowPos().y - ImGui::GetContentRegionMax().y;
+
+				float t = 0.0f;
+				while (t < duration)
+				{
+					t += ImGui::GetIO().DeltaTime;
+
+					float lerp_value = t / duration;
+					float current_scroll_y = ofLerp(start_scroll_y, end_scroll_y, lerp_value);
+
+					ImGui::SetScrollY(current_scroll_y);
+					window->DC.CursorPos.y = ImGui::GetContentRegionMax().y;
+
+					// Render the window to update the scrollbar position
+					ImGui::Render();
+				}
+
+				// Set the scroll position to the end value once the animation is complete
+				ImGui::SetScrollY(end_scroll_y);
+				window->DC.CursorPos.y = ImGui::GetContentRegionMax().y;
 			}
-			//ImGui::SetScrollY(y);
-			ImGui::SetScrollHereY(y);
+##elif(0)
+			//const float scroll_amount = ImGui::GetScrollY() * 0.1;
+			//float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
+			//ImGui::SetScrollY(new_scroll_y);
+
+			//cout << "ImGui::GetScrollY():" << ImGui::GetScrollY() << endl;
+
+
+			//float y = ImGui::GetScrollY();
+			//float step = 0.1f;
+			//if (y < 1.0f) y += step;
+			//else if (y >= 1.f) {
+			//	bFlagGoBottom = 0;//done
+			//	y = 1.f;
+			//	cout << "y:" << y << endl;
+			//}
+			////ImGui::SetScrollY(y);
+			//ImGui::SetScrollHereY(y);
 		}
 
 		//if (bFlagGoBottom)
@@ -1106,7 +1229,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 #endif
 
 		ui.EndWindow();
-}
+	}
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -1164,32 +1287,31 @@ void ofApp::doClearSubsList() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
+	//TODO:
+	//if (ui.isOverInputText())
+	if (bigTextInput.isOverInputText())
+	{
+		doAttendCallbackKeys();
+	}
+
 	if (ui.isOverInputText()) return; // skip when editing
 	if (chatGpt.isWaiting()) return;
 
-	//TODO:
-
-	if (key == '1') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
-	if (key == '2') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
-	if (key == '3') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
-	if (key == '4') { strBandname = "The Smiths";  doGptSendMessage(strBandname); return; }
-	if (key == '5') { strBandname = "Radio Futura"; doGptSendMessage(strBandname); return; }
-	if (key == '6') { strBandname = "John Frusciante"; doGptSendMessage(strBandname); return; }
-	if (key == '7') { strBandname = "Primus"; doGptSendMessage(strBandname); return; }
-	if (key == '8') { strBandname = "Kraftwerk"; doGptSendMessage(strBandname); return; }
-	if (key == '9') { strBandname = "Portishead"; doGptSendMessage(strBandname); return; }
-
-
 	if (0) return;
 
-	else if (key == 'g') {
+	else if (key == 'g' || key == 'G') {
 		bGui = !bGui;
 
 		//workflow
 		if (!bGui && bigTextInput.bGui_Config) bigTextInput.bGui_Config = 0;
 	}
 
-	//// next prompt
+	else if (key == OF_KEY_PAGE_UP) { bFlagGoTop = 1; }
+	else if (key == OF_KEY_PAGE_DOWN) { bFlagGoBottom = 1; }
+	//else if (key == OF_KEY_UP) { bFlagGoTopStp = 1; }
+	//else if (key == OF_KEY_DOWN) { bFlagGoBottomStp = 1; }
+
+	//// Next prompt
 	//else if (key == OF_KEY_TAB) { doSwapGptPrompt(); }
 
 	// Focus in text input
@@ -1201,20 +1323,13 @@ void ofApp::keyPressed(int key)
 	// Resend last
 	else if (key == OF_KEY_RETURN) { doGptResend(); }
 
-	else if (key == 'd') {
-		ui.bDebug = !ui.bDebug;
-		bigTextInput.bDebug = ui.bDebug;
-	}
-
-	else if (key == 'l') { bLock = !bLock; }
-
 	//// Regenerate
 	//else if (key == OF_KEY_RETURN) { doGptRegenerate(); }
 	//else if (key == ' ') { doGptRegenerate(); }
 
 	//TODO:
 	//browse history
-	if (key == OF_KEY_UP) {
+	if (key == OF_KEY_LEFT) {
 		i_hist--;
 		i_hist = MAX(0, i_hist);
 		i_hist = MIN(textHistory.size() - 1, i_hist);
@@ -1222,7 +1337,7 @@ void ofApp::keyPressed(int key)
 		bigTextInput.setText(s);
 		textInput.setWithoutEventNotifications(s);
 	}
-	else if (key == OF_KEY_DOWN) {
+	else if (key == OF_KEY_RIGHT) {
 		i_hist++;
 		i_hist = MAX(0, i_hist);
 		i_hist = MIN(textHistory.size() - 1, i_hist);
@@ -1230,6 +1345,28 @@ void ofApp::keyPressed(int key)
 		bigTextInput.setText(s);
 		textInput.setWithoutEventNotifications(s);
 	}
+
+	//TODO:
+	if (key == '1') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
+	if (key == '2') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
+	if (key == '3') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
+	if (key == '4') { strBandname = "The Smiths";  doGptSendMessage(strBandname); return; }
+	if (key == '5') { strBandname = "Radio Futura"; doGptSendMessage(strBandname); return; }
+	if (key == '6') { strBandname = "John Frusciante"; doGptSendMessage(strBandname); return; }
+	if (key == '7') { strBandname = "Primus"; doGptSendMessage(strBandname); return; }
+	if (key == '8') { strBandname = "Kraftwerk"; doGptSendMessage(strBandname); return; }
+	if (key == '9') { strBandname = "Portishead"; doGptSendMessage(strBandname); return; }
+
+	//----
+
+	if (ui.isGameMode()) return;//skip
+
+	if (key == 'd') {
+		ui.bDebug = !ui.bDebug;
+		bigTextInput.bDebug = ui.bDebug;
+	}
+
+	else if (key == 'l') { bLock = !bLock; }
 
 	//--
 
@@ -1525,7 +1662,7 @@ void ofApp::doGptGetMessage()
 
 	// focus in text input
 	bigTextInput.setFocus();
-}
+		}
 
 //--------------------------------------------------------------
 void ofApp::doRandomInput()
@@ -1844,4 +1981,26 @@ void ofApp::doClear(bool bSilent)
 		editorLastResponse.clearText();//workflow
 #endif
 	}
+}
+
+//--------------------------------------------------------------
+void ofApp::doAttendCallbackKeys()
+{
+	int i = ofRandom(soundsKeys.size());
+	ofLogNotice(__FUNCTION__) << "key: " << i;
+	soundsKeys[i].play();
+}
+
+//--------------------------------------------------------------
+void ofApp::drawWidgetsToTextInput()
+{
+	//ofLogNotice(__FUNCTION__);
+#if(1)
+	//ui.SameLine();
+	//ui.AddSpacingX(10);
+	//ui.AddSpacingY(5);
+	ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+#else
+	ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+#endif
 }
