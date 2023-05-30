@@ -1,10 +1,7 @@
 ofxChatGPT
-ofxFontStash
+ofxElevenLabs
 ofxGui
 ofxImGui
-ofxSurfingBox
 ofxSurfingHelpers
 ofxSurfingImGui
-ofxSurfingTextSubtitle
-ofxSurfingTTS
 ofxWindowApp

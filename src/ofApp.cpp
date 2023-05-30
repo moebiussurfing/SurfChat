@@ -512,7 +512,7 @@ void ofApp::update()
 	whisper.update();
 #endif
 
-#ifdef USE_SURF_TTF
+#ifdef USE_OFX_ELEVEN_LABS
 	//if (TTS.isWaiting()) bigTextInput.bWaiting = 1;
 #endif
 
@@ -581,8 +581,8 @@ void ofApp::draw()
 	ofPopMatrix();
 #endif
 
-#ifdef USE_SURF_TTF
-	//if (ui.bDebug) TTS.drawDebug();
+#ifdef USE_OFX_ELEVEN_LABS
+	if (ui.bDebug) TTS.drawDebugHelp();
 #endif
 }
 
@@ -590,6 +590,16 @@ void ofApp::draw()
 void ofApp::drawImGuiMain()
 {
 	if (!bGui) return;
+
+	auto drawColorTree = [this]() {
+		if (ui.BeginTree("Colors")) {
+			ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+			ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH);
+			ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH);
+			ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH);
+			ui.EndTree();
+		}
+		};
 
 	ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
 
@@ -642,7 +652,7 @@ void ofApp::drawImGuiMain()
 		ui.Add(ui.bGui_GameMode, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
 		ui.PopFont();
 
-		if (!ui.isGameMode()) {
+		if (!ui.isGameMode()) { // No Game
 			ui.AddSpacing();
 			ui.AddMinimizerToggle();
 			ui.AddLogToggle();
@@ -654,143 +664,77 @@ void ofApp::drawImGuiMain()
 			if (ui.isMaximized()) {
 				ui.Add(bLock, OFX_IM_TOGGLE);
 			}
+
+			ui.AddSpacingBigSeparated();
+			drawColorTree();
 		}
 		ui.AddSpacingBigSeparated();
 
 		// Game
-		if (ui.isGameMode()) {
-			ui.AddLabel("Font Size", 1);
-			ui.DrawWidgetsFonts(sizeFontConv, 0);
-			ui.AddSpacingSeparated();
+		if (ui.isGameMode()) 
+		{
+			if (ui.BeginTree("UI"))
+			{
+				ui.AddLabel("Font Size", 1);
+				ui.DrawWidgetsFonts(sizeFontConv, 0);
+				ui.AddSpacingSeparated();
 
-			//ImGui::SeparatorText("Scroll");
-			//if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
-			//	bFlagGoTop = 1;
-			//}
-			//ui.SameLine();
-			//if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
-			//	bFlagGoBottom = 1;
-			//}
-			//ui.AddSpacingSeparated();
+				//ImGui::SeparatorText("Scroll");
+				//if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
+				//	bFlagGoTop = 1;
+				//}
+				//ui.SameLine();
+				//if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
+				//	bFlagGoBottom = 1;
+				//}
+				//ui.AddSpacingSeparated();
 
-			//ui.AddLabel("Colors", 1);
-			if (ui.BeginTree("Colors")) {
-				ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-				ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-				ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-				ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				//ui.AddLabel("Colors", 1);
+				//if (ui.BeginTree("Colors")) {
+				//	ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
+				//	ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH);
+				//	ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH);
+				//	ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH);
+				//	ui.EndTree();
+				//}
+				drawColorTree();
+				ui.AddSpacingSeparated();
+
 				ui.EndTree();
 			}
-			ui.AddSpacingSeparated();
 
-			if (ui.AddButton("Restart##1", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+			//--
+
+			if (ui.BeginTree("ChatGPT"))
 			{
-				doGptRestart();
-			}
-			if (ui.AddButton("Clear##1", OFX_IM_BUTTON, 2))
-			{
-				doClear();
-			}
-			if (ui.AddButton("Regen##1", OFX_IM_BUTTON, 2, 1))
-			{
-				doGptRegenerate();
-			}
-			if (ui.AddButton("Resend##1", OFX_IM_BUTTON, 2))
-			{
-				doGptResend();
-			}
-			ui.AddSpacingSeparated();
-
-			//ui.AddCombo(indexPrompt, promptsNames);
-			//ui.PushFont(SurfingFontTypes(1));
-			//ui.AddTooltip(strPrompt);
-			//ui.PopFont();
-			//if (indexPrompt != 0) {
-			//	ui.AddCombo(indexTagWord, tags);
-			//	ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-			//}
-
-			//ui.AddSpacing();
-			ui.AddCombo(indexPrompt, promptsNames);
-			ui.PushFont(SurfingFontTypes(1));
-			ui.AddTooltip(strPrompt);
-			ui.PopFont();
-			if (indexPrompt != 0) {
-				ui.AddCombo(indexTagWord, tags);
-				ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-			}
-		}
-
-		// No Game
-		if (!ui.isGameMode())
-		{
-			ui.AddLabelHuge("ChatGPT");
-
-			static ofParameter<bool> b{ "SERVER",0 };
-			if (ui.isMaximized()) {
-				//ui.Add(b, OFX_IM_TOGGLE_ROUNDED_MINI);
-				ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
-			}
-			if (ui.isMaximized() && b)
-			{
-				ui.AddSpacing();
-				ui.AddLabelBig("API KEY");
-				ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
-				ui.AddLabelBig("MODEL");
-				ui.Add(model, OFX_IM_TEXT_DISPLAY);
-
-				if (ui.AddButton("Restart", OFX_IM_BUTTON))
+				if (ui.AddButton("Restart##1", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
 				{
 					doGptRestart();
 				}
-				if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
+				if (ui.AddButton("Clear##1", OFX_IM_BUTTON, 2))
 				{
-					doGptResetEndpointIP();
+					doClear();
 				}
-			}
-			ui.AddSpacingSeparated();
-
-#ifdef USE_EDITOR_INPUT
-			//ui.PushFont(OFX_IM_FONT_BIG);
-			{
-				if (ui.AddButton("Send"))
+				if (ui.AddButton("Regen##1", OFX_IM_BUTTON, 2, 1))
 				{
-					doGptSendMessage(editorInput.getText(), bModeConversation);
+					doGptRegenerate();
 				}
-			}
-			//ui.PopFont();
-#endif
+				if (ui.AddButton("Resend##1", OFX_IM_BUTTON, 2))
+				{
+					doGptResend();
+				}
+				ui.AddSpacingSeparated();
 
-			if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
-			{
-				doGptRestart();
-			}
-			if (ui.AddButton("Clear##2", OFX_IM_BUTTON, 2))
-			{
-				doClear();
-			}
-			if (ui.AddButton("Regen##2", OFX_IM_BUTTON, 2, 1))
-			{
-				doGptRegenerate();
-			}
-			if (ui.AddButton("Resend##2", OFX_IM_BUTTON, 2))
-			{
-				doGptResend();
-			}
-			ui.AddSpacingSeparated();
+				//ui.AddCombo(indexPrompt, promptsNames);
+				//ui.PushFont(SurfingFontTypes(1));
+				//ui.AddTooltip(strPrompt);
+				//ui.PopFont();
+				//if (indexPrompt != 0) {
+				//	ui.AddCombo(indexTagWord, tags);
+				//	ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+				//}
 
-			ui.AddLabelBig("Prompt");
-			ui.AddSpacing();
-
-			ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-			if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
-			ui.AddSpacingSeparated();
-
-			//ui.AddLabel("Role Prompt", 1);
-			static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
-			ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
-			if (bRole) {
-				ui.AddSpacing();
+				//ui.AddSpacing();
 				ui.AddCombo(indexPrompt, promptsNames);
 				ui.PushFont(SurfingFontTypes(1));
 				ui.AddTooltip(strPrompt);
@@ -799,96 +743,204 @@ void ofApp::drawImGuiMain()
 					ui.AddCombo(indexTagWord, tags);
 					ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
 				}
-			}
 
-			//--
+				ui.EndTree();
+			}
+		}
+
+		// No Game
+		if (!ui.isGameMode())
+		{
+			//ui.AddLabelHuge("ChatGPT");
+			if (ui.BeginTree("ChatGPT"))
+			{
+				static ofParameter<bool> b{ "SERVER",0 };
+				if (ui.isMaximized()) {
+					//ui.Add(b, OFX_IM_TOGGLE_ROUNDED_MINI);
+					ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
+				}
+				if (ui.isMaximized() && b)
+				{
+					ui.AddSpacing();
+					ui.AddLabelBig("API KEY");
+					ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
+					ui.AddLabelBig("MODEL");
+					ui.Add(model, OFX_IM_TEXT_DISPLAY);
+
+					if (ui.AddButton("Restart", OFX_IM_BUTTON))
+					{
+						doGptRestart();
+					}
+					if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
+					{
+						doGptResetEndpointIP();
+					}
+				}
+				ui.AddSpacingSeparated();
 
 #ifdef USE_EDITOR_INPUT
-			ui.AddLabelHuge("EDITORS");
-			ui.AddSpacing();
-			ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+				//ui.PushFont(OFX_IM_FONT_BIG);
+				{
+					if (ui.AddButton("Send"))
+					{
+						doGptSendMessage(editorInput.getText(), bModeConversation);
+					}
+				}
+				//ui.PopFont();
 #endif
-			if (ui.isMaximized())
-			{
+
+				if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+				{
+					doGptRestart();
+				}
+				if (ui.AddButton("Clear##2", OFX_IM_BUTTON, 2))
+				{
+					doClear();
+				}
+				if (ui.AddButton("Regen##2", OFX_IM_BUTTON, 2, 1))
+				{
+					doGptRegenerate();
+				}
+				if (ui.AddButton("Resend##2", OFX_IM_BUTTON, 2))
+				{
+					doGptResend();
+				}
 				ui.AddSpacingSeparated();
-				ui.Add(bModeConversation, OFX_IM_TOGGLE);
-				if (bModeConversation) {
-					ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
+
+				ui.AddLabelBig("Prompt");
+				ui.AddSpacing();
+
+				ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+				if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
+				ui.AddSpacingSeparated();
+
+				//ui.AddLabel("Role Prompt", 1);
+				static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
+				ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
+				if (bRole) {
 					ui.AddSpacing();
-					if (bGui_GptConversation) {
-						if (ui.AddButton("Reset window")) {
-							doResetWindowConversation();
-						}
-						ui.DrawWidgetsFonts(sizeFontConv, 0);
-						ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
-						s = "Last block will blink";
-						ui.AddTooltip(s);
-						ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
-						s = "Last block will be bigger";
-						ui.AddTooltip(s);
+					ui.AddCombo(indexPrompt, promptsNames);
+					ui.PushFont(SurfingFontTypes(1));
+					ui.AddTooltip(strPrompt);
+					ui.PopFont();
+					if (indexPrompt != 0) {
+						ui.AddCombo(indexTagWord, tags);
+						ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
 					}
 				}
 
-#ifdef USE_EDITOR_RESPONSE
-				ui.AddSpacingBigSeparated();
-				ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
-#endif
-				s = gptErrorMessage;
-				if (s != "") {
-					ui.AddSpacingBigSeparated();
+				//--
 
-					//s = errorCodesNames[indexErrorCode.get()];
-					//ui.AddLabelBig(s);
-					ui.AddLabelBig(s);
-				}
+#ifdef USE_EDITOR_INPUT
+				ui.AddLabelHuge("EDITORS");
+				ui.AddSpacing();
+				ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+#endif
+				if (ui.isMaximized())
+				{
+					ui.AddSpacingSeparated();
+					ui.Add(bModeConversation, OFX_IM_TOGGLE);
+					if (bModeConversation) {
+						ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
+						ui.AddSpacing();
+						if (bGui_GptConversation) {
+							if (ui.AddButton("Reset window")) {
+								doResetWindowConversation();
+							}
+							ui.DrawWidgetsFonts(sizeFontConv, 0);
+							ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
+							s = "Last block will blink";
+							ui.AddTooltip(s);
+							ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
+							s = "Last block will be bigger";
+							ui.AddTooltip(s);
+						}
+					}
+
+#ifdef USE_EDITOR_RESPONSE
+					ui.AddSpacingBigSeparated();
+					ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
+#endif
+					s = gptErrorMessage;
+					if (s != "") {
+						ui.AddSpacingBigSeparated();
+
+						//s = errorCodesNames[indexErrorCode.get()];
+						//ui.AddLabelBig(s);
+						ui.AddLabelBig(s);
+					}
 #if(1)
 #if(1)
-				if (ui.bDebug) {
-					ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
-					if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
-						//bigTextInput.typeWaiting = typeSpin;
-					};
+					if (ui.bDebug) {
+						ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
+						if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
+							//bigTextInput.typeWaiting = typeSpin;
+						};
+					}
+#endif
+					ImSpinner::Spinner(bWaitingGpt, typeSpin);
+					//ui.AddSpacingBigSeparated();
+#endif
 				}
-#endif
-				ImSpinner::Spinner(bWaitingGpt, typeSpin);
-				//ui.AddSpacingBigSeparated();
-#endif
+
+				ui.EndTree();
 			}
 		}
 
 		//--
 
-#ifdef USE_SURF_TTF
+#ifdef USE_OFX_ELEVEN_LABS
 		{
-			s = "Voice";
 			ui.AddSpacingSeparated();
-			ui.AddLabelBig(s, 1);
-			ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
-			ui.AddTooltip("Text To Speech\n");
-			if (TTS.bEnable) {
-				if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
-					TTS.send(textLastResponse);
-				}
-				s = TTS.getText();
-				ui.PushFont(SurfingFontTypes(1));
-				ui.AddTooltip(s);
-				ui.PopFont();
+			//s = "ElevenLabs";
+			//ui.AddLabelBig(s, 1);
+			if (ui.BeginTree("ElevenLabs"))
+			{
+				ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
+				ui.AddTooltip("Text To Speech\n");
+				if (TTS.bEnable) {
+					ui.Add(TTS.bModeUseCustomServer);
+					if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
+						TTS.doSend(textLastResponse);
+					}
+					if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2)) {
+						TTS.doCancelRequest();
+					}
 
-				if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2)) {
-					TTS.cancel();
-				}
-				ui.AddCombo(TTS.indexVoice, TTS.voices);
-				ui.AddTooltip("Voices");
+					ui.AddCombo(TTS.voiceIndex, TTS.voicesNames);
+					ui.AddTooltip("Voices");
 
-				if (ui.AddButton("Replay", OFX_IM_BUTTON)) {
-					TTS.replayAudio();
+					ui.Add(TTS.stability);
+					ui.Add(TTS.similarity_boost);
+
+					if (ui.AddButton("Replay", OFX_IM_BUTTON)) {
+						TTS.doReplayAudio();
+					}
+					ui.AddTooltip("Replay last audio");
+
+					if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
+						TTS.doReset();
+					}
+
+					if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON)) {
+						TTS.doCancelRequest();
+					}
+					if (ui.AddButton("Restart##tts", OFX_IM_BUTTON)) {
+						TTS.doRestart();
+					}
+
+					s = TTS.getText();
+					ui.PushFont(SurfingFontTypes(1));
+					ui.AddTooltip(s);
+					ui.PopFont();
+
+					ImSpinner::Spinner(TTS.isWaiting(), typeSpin);
+					if (ui.bDebug) {
+						s = TTS.getTextDisplayHelp();
+						ui.AddLabel(s);
+					}
 				}
-				ui.AddTooltip("Replay last audio");
-				ImSpinner::Spinner(TTS.isWaiting(), typeSpin);
-				if (ui.bDebug) {
-					s = TTS.getTextDisplay();
-					ui.AddLabel(s);
-				}
+				ui.EndTree();
 			}
 		}
 #endif
@@ -943,8 +995,8 @@ void ofApp::drawImGuiMain()
 						}
 					}
 					//ui.PopFont();
-				}
-			}
+					}
+					}
 #endif
 			/*
 			if (ui.isMaximized() && ui.bDebug)
@@ -960,7 +1012,7 @@ void ofApp::drawImGuiMain()
 				}
 			}
 			*/
-		}
+				}
 
 		ui.AddSpacingSeparated();
 		if (ui.AddButton("Reset##all")) {
@@ -968,7 +1020,7 @@ void ofApp::drawImGuiMain()
 		}
 
 		ui.EndWindow();
-	}
+			}
 }
 
 //--------------------------------------------------------------
@@ -1320,7 +1372,7 @@ void ofApp::doPopulateText(string s)
 	{
 		ofLogNotice("ofApp") << "|";
 	}
-}
+		}
 
 // Function to process a full file and split into blocks/slides.
 //--------------------------------------------------------------
@@ -1346,6 +1398,11 @@ void ofApp::keyPressed(int key)
 
 	if (ui.isOverInputText()) return; // skip when editing
 	if (chatGpt.isWaiting()) return;
+
+#ifdef USE_OFX_ELEVEN_LABS
+	// Testing Helpers
+	TTS.keyPressed(key);
+#endif
 
 	if (0) return;
 
@@ -1520,7 +1577,7 @@ void ofApp::drawWidgetsEditor()
 		doGptSendMessage(s, bModeConversation);
 		editorInput.clearText();
 	}
-}
+	}
 #endif
 
 //--------------------------------------------------------------
@@ -1685,8 +1742,8 @@ void ofApp::doGptGetMessage()
 #endif
 		sounds[3].play();
 
-#ifdef USE_SURF_TTF
-		TTS.send(textLastResponse);
+#ifdef USE_OFX_ELEVEN_LABS
+		TTS.doSend(textLastResponse);
 #endif
 	}
 	else // Error
@@ -1838,7 +1895,7 @@ void ofApp::drawImGuiWidgetsWhisper()
 		}
 		ui.AddSpacing();
 		//ui.AddLabel(whisper.getTextLast());
-	}
+}
 
 	ui.AddSpacingBigSeparated();
 }
@@ -2060,11 +2117,11 @@ void ofApp::drawWidgetsToTextInputContext()
 
 	ui.PushFont(SurfingFontTypes(1));
 
-		//TODO:
-		float w = 300;
-		float h = 0;
-		ImGui::SetNextWindowContentSize(ImVec2(w, h));
-		//ImGui::SetNextWindowSizeConstraints(ImVec2(140, 400), ImVec2(w, 400));
+	//TODO:
+	float w = 300;
+	float h = 0;
+	ImGui::SetNextWindowContentSize(ImVec2(w, h));
+	//ImGui::SetNextWindowSizeConstraints(ImVec2(140, 400), ImVec2(w, 400));
 
 	if (ImGui::BeginPopupContextItem("My Context Menu"))
 	{
@@ -2089,8 +2146,10 @@ void ofApp::drawWidgetsToTextInputContext()
 			ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
 		}
 
-#ifdef USE_SURF_TTF
+#ifdef USE_OFX_ELEVEN_LABS
 		ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
+		if (TTS.bEnable)
+			ui.Add(TTS.bModeUseCustomServer, OFX_IM_TOGGLE_ROUNDED_MINI);
 #endif
 		ui.AddSpacing();
 		if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();

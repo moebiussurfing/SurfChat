@@ -4,6 +4,8 @@
 
 	TODO
 
+	add tokens for longer replay
+
 	ui docking
 		add common menus to addon (exit, full screen, )
 		use modes like: conversation, prompt selector etc
@@ -11,10 +13,7 @@
 
 	add ui menus: full screen, copy
 
-	fix TTS send lock update!
-		resend if error
-
-	scroll tween
+	scroll tween when added new messages
 
 	add context menu for game mode, minimize, debug etc
 
@@ -38,7 +37,7 @@
 //--
 
 // Optional Modules
-#define USE_SURF_TTF
+#define USE_OFX_ELEVEN_LABS
 //#define USE_SURF_SUBTITLES
 //#define USE_EDITOR_INPUT
 #define USE_EDITOR_RESPONSE
@@ -68,8 +67,8 @@
 #include "surfingWhisper.h"
 #endif
 
-#ifdef USE_SURF_TTF
-#include "ofxSurfingTTS.h"
+#ifdef USE_OFX_ELEVEN_LABS
+#include "ofxElevenLabs.h"
 #endif
 
 #include "ofxWindowApp.h"
@@ -81,7 +80,6 @@ using callback_t = std::function<void()>;
 
 class ofApp : public ofBaseApp
 {
-
 public:
 	void setup();
 	void update();
@@ -284,16 +282,16 @@ public:
 	void drawImGuiWidgetsWhisper();
 #endif
 
-#ifdef USE_SURF_TTF
-	ofxSurfingTTS TTS;
+#ifdef USE_OFX_ELEVEN_LABS
+	ofxElevenLabs TTS;
 #endif
 
 	//--
 
 	ofParameter<ofColor> colorBg{ "ColorBg", ofColor::grey, ofColor(), ofColor() };
-	ofParameter<ofColor> colorAccent{ "ColorAccent", ofColor::grey, ofColor(), ofColor() };
-	ofParameter<ofColor> colorUser{ "ColorUser", ofColor::grey, ofColor(), ofColor() };
-	ofParameter<ofColor> colorAssistant{ "ColorAssistant", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorAccent{ "ColorBubbleAccent", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorUser{ "ColorTxtUser", ofColor::grey, ofColor(), ofColor() };
+	ofParameter<ofColor> colorAssistant{ "ColorTxtAssistant", ofColor::grey, ofColor(), ofColor() };
 
 	// Tester
 	string strBandname;
