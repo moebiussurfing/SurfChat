@@ -28,14 +28,15 @@ void ofApp::setupInputText()
 	callback_t myFunctionDraw = std::bind(&ofApp::drawWidgetsToTextInput, this);
 	bigTextInput.setDrawWidgetsFunction(myFunctionDraw);
 
-	//TODO:
-	// Extra widget to insert into the text input widget, context
-	callback_t myFunctionDrawContext = std::bind(&ofApp::drawWidgetsToTextInputContext, this);
-	//bigTextInput.setDrawWidgetsFunctionContext(myFunctionDrawContext);
+	////TODO:
+	//// Extra widget to insert into the text input widget, context
+	//callback_t myFunctionDrawContext = std::bind(&ofApp::drawWidgetsContextMenu, this);
+	//bigTextInput.setDrawWidgetsFunctionContextMenu(myFunctionDrawContext);
 
-	// Keys
-	callback_t myFunctionCallbackKeys = std::bind(&ofApp::doAttendCallbackKeys, this);
-	bigTextInput.setFunctionCallbackKeys(myFunctionCallbackKeys);
+	//TODO:
+	//// Keys. to trig key sounds
+	//callback_t myFunctionCallbackKeys = std::bind(&ofApp::doAttendCallbackKeys, this);
+	//bigTextInput.setFunctionCallbackKeys(myFunctionCallbackKeys);
 
 	// Link toggles
 	bigTextInput.bDebug.makeReferenceTo(ui.bDebug);
@@ -125,11 +126,6 @@ void ofApp::setup()
 
 	//--
 
-	// Sounds
-	setupSounds();
-
-	//--
-
 	startup();
 }
 
@@ -166,7 +162,7 @@ void ofApp::setupParams()
 	params.add(typeSpin);
 
 	paramsPrompts.add(indexPrompt);
-	paramsPrompts.add(indexTagWord);
+	paramsPrompts.add(indexTags);
 	paramsPrompts.add(amountResultsPrompt);
 	params.add(paramsPrompts);
 
@@ -175,58 +171,6 @@ void ofApp::setupParams()
 	// Link
 	bigTextInput.colorBubble.makeReferenceTo(colorAccent);
 	bigTextInput.colorTxt.makeReferenceTo(colorUser);
-}
-
-//--------------------------------------------------------------
-void ofApp::setupSounds()
-{
-	ofLogNotice(__FUNCTION__);
-
-	ofSoundPlayer s0;//intro
-	s0.load("assets/sounds/0.wav");
-	sounds.push_back(s0);
-
-	ofSoundPlayer s1;//send
-	s1.load("assets/sounds/1.wav");
-	sounds.push_back(s1);
-
-	ofSoundPlayer s2;//receive
-	s2.load("assets/sounds/2.wav");
-	sounds.push_back(s2);
-
-	ofSoundPlayer s3;//error
-	s3.load("assets/sounds/3.wav");
-	sounds.push_back(s3);
-
-	ofSoundPlayer s4;//clear
-	s4.load("assets/sounds/4.ogg");
-	sounds.push_back(s4);
-
-	ofSoundPlayer s5;//error
-	s5.load("assets/sounds/5.mp3");
-	sounds.push_back(s5);
-
-	// keys
-	string p = "assets/sounds/keys/";
-	soundsKeys.clear();
-	for (size_t i = 0; i < 9; i++)
-	{
-		string n = "keys-00" + ofToString(i) + ".wav";
-		ofSoundPlayer sk;
-		sk.load(p + n);
-		sk.setVolume(1.f);
-		sk.setMultiPlay(0);
-		soundsKeys.push_back(sk);
-	}
-
-	for (auto& s : sounds)
-	{
-		s.setVolume(1.f);
-		s.setMultiPlay(1);
-	}
-	sounds[4].setVolume(0.5);
-
-	sounds[0].play();
 }
 
 //--------------------------------------------------------------
@@ -242,7 +186,7 @@ void ofApp::startup()
 	//ui.ClearLogDefaultTags();
 
 	// Default
-	doReset(1);
+	doResetAll(1);
 
 	//ofxSurfingHelpers::load(params);
 
@@ -268,7 +212,7 @@ void ofApp::startupDelayed()
 void ofApp::setupGpt(bool bSilent)
 {
 	ofLogNotice(__FUNCTION__);
-	//if(!bSilent) sounds[5].play();
+	//if(!bSilent) sounds.play(5);
 
 	//if (apiKey.get() == "")
 	//{
@@ -331,7 +275,7 @@ void ofApp::setupGpt(bool bSilent)
 	//--
 
 	setupGptPrompts();
-	//doSetGptPrompt(0);//default
+	//doGptSetPrompt(0);//default
 }
 
 //--------------------------------------------------------------
@@ -339,9 +283,9 @@ void ofApp::doRefreshGptPrompts()
 {
 	ofLogNotice(__FUNCTION__);
 
-	tagWord = tags[indexTagWord.get()];
+	tagWord = tagsNames[indexTags.get()];
 	setupGptPrompts();
-	doSetGptPrompt(indexPrompt);
+	doGptSetPrompt(indexPrompt);
 }
 
 //--------------------------------------------------------------
@@ -352,15 +296,10 @@ void ofApp::setupGptPrompts()
 	// Create prompts
 	promptsNames.clear();
 
-	//promptsNames.push_back("Default conversation.");
-	//promptsNames.push_back(ofToString("Sentences from a " + tagWord + " advertiser.");
-	//promptsNames.push_back(ofToString("Words that define a " + tagWord + " from a critic.");
-	//promptsNames.push_back(ofToString("Other similar " + tagWord + " from a critic.");
-
 	promptsNames.push_back("Default");
-	promptsNames.push_back(ofToString("Sentences"));
 	promptsNames.push_back(ofToString("Words"));
-	promptsNames.push_back(ofToString("Other"));
+	promptsNames.push_back(ofToString("Sentences"));
+	promptsNames.push_back(ofToString("Similar"));
 
 	indexPrompt.setMax(promptsNames.size() - 1);
 
@@ -374,16 +313,16 @@ void ofApp::setupGptPrompts()
 }
 
 //--------------------------------------------------------------
-void ofApp::doSetGptPrompt(int index)
+void ofApp::doGptSetPrompt(int index)
 {
 	if (!bDoneStartupDelayed) return;
 
 	//if (indexPrompt == index) return;//skip if not changed
 
 	ofLogNotice(__FUNCTION__) << index;
-	//sounds[5].play();
+	//sounds.play(5);
 
-	ui.AddToLog("doSetGptPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
+	ui.AddToLog("doGptSetPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
 
 	if (index > promptsContents.size() - 1) {
 		ui.AddToLog("Index " + ofToString(index) + " out of range!", OF_LOG_ERROR);
@@ -464,17 +403,17 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 	else if (n == amountResultsPrompt.getName())
 	{
 		setupGptPrompts();
-		doSetGptPrompt(indexPrompt);
+		doGptSetPrompt(indexPrompt);
 	}
-	else if (n == indexTagWord.getName())
+	else if (n == indexTags.getName())
 	{
-		tagWord = tags[indexTagWord.get()];
+		tagWord = tagsNames[indexTags.get()];
 		setupGptPrompts();
-		doSetGptPrompt(indexPrompt);
+		doGptSetPrompt(indexPrompt);
 	}
 	if (n == indexPrompt.getName())
 	{
-		doSetGptPrompt(indexPrompt);
+		doGptSetPrompt(indexPrompt);
 
 		//workflow
 		if (textHistory.size() > 0) {
@@ -513,7 +452,7 @@ void ofApp::update()
 #endif
 
 #ifdef USE_OFX_ELEVEN_LABS
-	//if (TTS.isWaiting()) bigTextInput.bWaiting = 1;
+	//if (tts.isWaiting()) bigTextInput.bWaiting = 1;
 #endif
 
 	//--
@@ -582,16 +521,311 @@ void ofApp::draw()
 #endif
 
 #ifdef USE_OFX_ELEVEN_LABS
-	if (ui.bDebug) TTS.drawDebugHelp();
+	if (ui.bDebug) tts.drawDebugHelp();
 #endif
 }
+
+#ifdef USE_OFX_ELEVEN_LABS
+//--------------------------------------------------------------
+void ofApp::drawImGuiElebenLabs2()
+{
+	string s = "";
+	if (ui.BeginTree("ElevenLabs"))
+	{
+		ui.Add(tts.bEnable, OFX_IM_TOGGLE);
+		ui.AddTooltip("Text To Speech\n");
+		if (tts.bEnable) {
+			if (ui.isMaximized()) ui.Add(tts.bModeUseAltServer);
+
+			if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
+				tts.doSend(textLastResponse);
+			}
+			if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2)) {
+				tts.doCancelRequest();
+			}
+
+			ui.Add(tts.stability, OFX_IM_HSLIDER_MINI);
+			ui.Add(tts.similarity_boost, OFX_IM_HSLIDER_MINI);
+			ui.AddSpacingSeparated();
+
+			ImSpinner::Spinner(tts.isWaiting(), typeSpin);
+			if (ui.bDebug) {
+				s = tts.getTextDisplayHelp();
+				ui.AddLabel(s);
+			}
+		}
+
+		ui.EndTree();
+	}
+}
+
+//--------------------------------------------------------------
+void ofApp::drawImGuiElebenLabs()
+{
+	string s = "";
+
+	//s = "ElevenLabs";
+	//ui.AddLabelBig(s, 1);
+	if (ui.BeginTree("ElevenLabs"))
+	{
+		ui.Add(tts.bEnable, OFX_IM_TOGGLE);
+		ui.AddTooltip("Text To Speech\n");
+		if (tts.bEnable) {
+			if (ui.isMaximized()) ui.Add(tts.bModeUseAltServer);
+			if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
+				tts.doSend(textLastResponse);
+			}
+			s = tts.getText();
+			ui.PushFont(SurfingFontTypes(1));
+			ui.AddTooltip(s);
+			ui.PopFont();
+
+			if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2)) {
+				tts.doCancelRequest();
+			}
+
+			ui.AddCombo(tts.voiceIndex, tts.voicesNames);
+			ui.AddTooltip("Voices");
+			ui.AddSpacing();
+
+			ui.Add(tts.stability, OFX_IM_HSLIDER_MINI);
+			ui.Add(tts.similarity_boost, OFX_IM_HSLIDER_MINI);
+			ui.AddSpacingSeparated();
+
+			if (ui.isMaximized())
+			{
+				drawImGuiElebenLabsExtras();
+			}
+
+			ImSpinner::Spinner(tts.isWaiting(), typeSpin);
+			if (ui.bDebug) {
+				s = tts.getTextDisplayHelp();
+				ui.AddLabel(s);
+			}
+		}
+
+		ui.EndTree();
+	}
+}
+#endif
+
+//--------------------------------------------------------------
+void ofApp::drawImGuiGpt1()
+{
+	//ui.AddLabelHuge("ChatGPT");
+	if (ui.BeginTree("ChatGPT"))
+	{
+		string s = "";
+
+		static ofParameter<bool> b{ "SERVER",0 };
+		if (ui.isMaximized()) {
+			//ui.Add(b, OFX_IM_TOGGLE_ROUNDED_MINI);
+			ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
+		}
+		if (ui.isMaximized() && b)
+		{
+			ui.AddSpacing();
+			ui.AddLabelBig("API KEY");
+			ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
+			ui.AddLabelBig("MODEL");
+			ui.Add(model, OFX_IM_TEXT_DISPLAY);
+
+			if (ui.AddButton("Restart", OFX_IM_BUTTON))
+			{
+				doGptRestart();
+			}
+			if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
+			{
+				doGptResetEndpointIP();
+			}
+		}
+		ui.AddSpacingSeparated();
+
+#ifdef USE_EDITOR_INPUT
+		//ui.PushFont(OFX_IM_FONT_BIG);
+		{
+			if (ui.AddButton("Send"))
+			{
+				doGptSendMessage(editorInput.getText(), bModeConversation);
+			}
+		}
+		//ui.PopFont();
+#endif
+
+		if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+		{
+			doGptRestart();
+		}
+		if (ui.AddButton("Clear##2", OFX_IM_BUTTON, 2))
+		{
+			doClear();
+		}
+		if (ui.AddButton("Regen##2", OFX_IM_BUTTON, 2, 1))
+		{
+			doGptRegenerate();
+		}
+		if (ui.AddButton("Resend##2", OFX_IM_BUTTON, 2))
+		{
+			doGptResend();
+		}
+		ui.AddSpacingSeparated();
+
+		ui.AddLabelBig("Prompt");
+		ui.AddSpacing();
+
+		ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+		if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
+		ui.AddSpacingSeparated();
+
+		//ui.AddLabel("Role Prompt", 1);
+		static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
+		ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
+		if (bRole) {
+			ui.AddSpacing();
+			ui.AddCombo(indexPrompt, promptsNames);
+			ui.PushFont(SurfingFontTypes(1));
+			ui.AddTooltip(strPrompt);
+			ui.PopFont();
+			if (indexPrompt != 0) {
+				ui.AddCombo(indexTags, tagsNames);
+				ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+			}
+		}
+
+		//--
+
+#ifdef USE_EDITOR_INPUT
+		ui.AddLabelHuge("EDITORS");
+		ui.AddSpacing();
+		ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+#endif
+		if (ui.isMaximized())
+		{
+			ui.AddSpacingSeparated();
+			ui.Add(bModeConversation, OFX_IM_TOGGLE);
+			if (bModeConversation) {
+				ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
+				ui.AddSpacing();
+				if (bGui_GptConversation) {
+					if (ui.AddButton("Reset window")) {
+						doResetWindowConversation();
+					}
+					//ui.DrawWidgetsFonts(sizeFontConv, 0);
+					ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
+					s = "Last block will blink";
+					ui.AddTooltip(s);
+					ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
+					s = "Last block will be bigger";
+					ui.AddTooltip(s);
+				}
+			}
+
+#ifdef USE_EDITOR_RESPONSE
+			ui.AddSpacingBigSeparated();
+			ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
+#endif
+			s = gptErrorMessage;
+			if (s != "") {
+				ui.AddSpacingBigSeparated();
+
+				//s = errorCodesNames[indexErrorCode.get()];
+				//ui.AddLabelBig(s);
+				ui.AddLabelBig(s);
+			}
+#if(1)
+#if(1)
+			if (ui.bDebug) {
+				ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
+				if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
+					//bigTextInput.typeWaiting = typeSpin;
+				};
+			}
+#endif
+			ImSpinner::Spinner(bWaitingGpt, typeSpin);
+			//ui.AddSpacingBigSeparated();
+#endif
+		}
+
+		ui.EndTree();
+	}
+}
+
+//--------------------------------------------------------------
+void ofApp::drawImGuiGpt()
+{
+	if (ui.BeginTree("ChatGPT"))
+	{
+		if (ui.AddButton("Restart##1", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+		{
+			doGptRestart();
+		}
+		if (ui.AddButton("Clear##1", OFX_IM_BUTTON, 2))
+		{
+			doClear();
+		}
+		if (ui.AddButton("Regen##1", OFX_IM_BUTTON, 2, 1))
+		{
+			doGptRegenerate();
+		}
+		if (ui.AddButton("Resend##1", OFX_IM_BUTTON, 2))
+		{
+			doGptResend();
+		}
+		ui.AddSpacingSeparated();
+
+		ui.AddCombo(indexPrompt, promptsNames);
+		ui.PushFont(SurfingFontTypes(1));
+		ui.AddTooltip(strPrompt);
+		ui.PopFont();
+		if (indexPrompt != 0) {
+			ui.AddCombo(indexTags, tagsNames);
+			ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
+		}
+
+		ui.EndTree();
+	}
+}
+
+#ifdef USE_OFX_ELEVEN_LABS
+//--------------------------------------------------------------
+void ofApp::drawImGuiElebenLabsExtras()
+{
+	//auto drawElevenLabsExtras = [this]() {
+	ui.AddSpacing();
+	if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
+		tts.doReset();
+	}
+	ui.AddTooltip("Reset settings");
+
+	if (ui.AddButton("Replay##tts", OFX_IM_BUTTON, 2, 1)) {
+		tts.doReplayAudio();
+	}
+	ui.AddTooltip("Replay last audio");
+
+	if (ui.AddButton("Resend##tts", OFX_IM_BUTTON, 2)) {
+		tts.doResend();
+	}
+	ui.AddTooltip("Resend last text");
+
+	if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON, 2, 1)) {
+		tts.doCancelRequest();
+	}
+	ui.AddTooltip("Force stop request");
+
+	if (ui.AddButton("Restart##tts", OFX_IM_BUTTON, 2)) {
+		tts.doRestart();
+	}
+	ui.AddTooltip("Restart connection");
+	//};
+}
+#endif
 
 //--------------------------------------------------------------
 void ofApp::drawImGuiMain()
 {
 	if (!bGui) return;
 
-	auto drawColorTree = [this]() {
+	static auto drawColorTree = [this]() {
 		if (ui.BeginTree("Colors")) {
 			ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
 			ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH);
@@ -601,11 +835,43 @@ void ofApp::drawImGuiMain()
 		}
 		};
 
+	//#ifdef USE_OFX_ELEVEN_LABS
+	//	static auto drawElevenLabsExtras = [this]() {
+	//		ui.AddSpacing();
+	//		if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
+	//			tts.doReset();
+	//		}
+	//		ui.AddTooltip("Reset settings");
+	//
+	//		if (ui.AddButton("Replay##tts", OFX_IM_BUTTON, 2, 1)) {
+	//			tts.doReplayAudio();
+	//		}
+	//		ui.AddTooltip("Replay last audio");
+	//
+	//		if (ui.AddButton("Resend##tts", OFX_IM_BUTTON, 2)) {
+	//			tts.doResend();
+	//		}
+	//		ui.AddTooltip("Resend last text");
+	//
+	//		if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON, 2, 1)) {
+	//			tts.doCancelRequest();
+	//		}
+	//		ui.AddTooltip("Force stop request");
+	//
+	//		if (ui.AddButton("Restart##tts", OFX_IM_BUTTON, 2)) {
+	//			tts.doRestart();
+	//		}
+	//		ui.AddTooltip("Restart connection");
+	//		};
+	//#endif
+
+	//--
+
 	ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
 
 	// Constraints
 	//ImVec2 size_min = ImVec2(120, 300);
-	ImVec2 size_min = ImVec2(140, 300);
+	ImVec2 size_min = ImVec2(140, 100);
 	ImVec2 size_max = ImVec2(FLT_MAX, FLT_MAX);
 	ImGui::SetNextWindowSizeConstraints(size_min, size_max);
 
@@ -635,16 +901,19 @@ void ofApp::drawImGuiMain()
 		}
 		*/
 
-		//TODO:
-		if (0)
-			if (ofGetFrameNum() % 120 == 0) {
-				// Bring "My Window" to the top of the z-order if it's not already in the front
-				if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
-				{
-					ImGui::SetWindowFocus(nullptr);
-					ImGui::SetWindowFocus("My Window");
-				}
-			}
+		////TODO:
+		// fix focus isues when conversation window is on top of the z-order
+		//if (0)
+		//{
+		//	if (ofGetFrameNum() % 120 == 0) {
+		//		// Bring "My Window" to the top of the z-order if it's not already in the front
+		//		if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+		//		{
+		//			ImGui::SetWindowFocus(nullptr);
+		//			ImGui::SetWindowFocus("My Window");
+		//		}
+		//	}
+		//}
 
 		string s;
 
@@ -652,7 +921,9 @@ void ofApp::drawImGuiMain()
 		ui.Add(ui.bGui_GameMode, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
 		ui.PopFont();
 
-		if (!ui.isGameMode()) { // No Game
+		// No Game
+		if (!ui.isGameMode())
+		{
 			ui.AddSpacing();
 			ui.AddMinimizerToggle();
 			ui.AddLogToggle();
@@ -664,296 +935,70 @@ void ofApp::drawImGuiMain()
 			if (ui.isMaximized()) {
 				ui.Add(bLock, OFX_IM_TOGGLE);
 			}
-
 			ui.AddSpacingBigSeparated();
+
 			drawColorTree();
 		}
+
 		ui.AddSpacingBigSeparated();
 
-		// Game
-		if (ui.isGameMode()) 
+		//--
+
+		if (ui.BeginTree("UI"))
 		{
-			if (ui.BeginTree("UI"))
-			{
-				ui.AddLabel("Font Size", 1);
-				ui.DrawWidgetsFonts(sizeFontConv, 0);
-				ui.AddSpacingSeparated();
+			ui.AddLabel("Font Size", 1);
+			ui.DrawWidgetsFonts(sizeFontConv, 0);
+			ui.AddSpacingSeparated();
 
-				//ImGui::SeparatorText("Scroll");
-				//if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
-				//	bFlagGoTop = 1;
-				//}
-				//ui.SameLine();
-				//if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
-				//	bFlagGoBottom = 1;
-				//}
-				//ui.AddSpacingSeparated();
-
-				//ui.AddLabel("Colors", 1);
-				//if (ui.BeginTree("Colors")) {
-				//	ui.Add(colorBg, OFX_IM_COLOR_BOX_FULL_WIDTH_NO_ALPHA);
-				//	ui.Add(colorAccent, OFX_IM_COLOR_BOX_FULL_WIDTH);
-				//	ui.Add(colorAssistant, OFX_IM_COLOR_BOX_FULL_WIDTH);
-				//	ui.Add(colorUser, OFX_IM_COLOR_BOX_FULL_WIDTH);
-				//	ui.EndTree();
-				//}
-				drawColorTree();
-				ui.AddSpacingSeparated();
-
-				ui.EndTree();
+			if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true)) {
+				bFlagGoTop = 1;
 			}
+			ui.SameLine();
+			if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2)) {
+				bFlagGoBottom = 1;
+			}
+			ui.AddSpacingSeparated();
 
+			drawColorTree();
+
+			ui.EndTree();
+		}
+
+		ui.AddSpacingSeparated();
+
+		// Game
+		if (ui.isGameMode())
+		{
 			//--
 
-			if (ui.BeginTree("ChatGPT"))
-			{
-				if (ui.AddButton("Restart##1", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
-				{
-					doGptRestart();
-				}
-				if (ui.AddButton("Clear##1", OFX_IM_BUTTON, 2))
-				{
-					doClear();
-				}
-				if (ui.AddButton("Regen##1", OFX_IM_BUTTON, 2, 1))
-				{
-					doGptRegenerate();
-				}
-				if (ui.AddButton("Resend##1", OFX_IM_BUTTON, 2))
-				{
-					doGptResend();
-				}
-				ui.AddSpacingSeparated();
+			drawImGuiGpt();
 
-				//ui.AddCombo(indexPrompt, promptsNames);
-				//ui.PushFont(SurfingFontTypes(1));
-				//ui.AddTooltip(strPrompt);
-				//ui.PopFont();
-				//if (indexPrompt != 0) {
-				//	ui.AddCombo(indexTagWord, tags);
-				//	ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-				//}
-
-				//ui.AddSpacing();
-				ui.AddCombo(indexPrompt, promptsNames);
-				ui.PushFont(SurfingFontTypes(1));
-				ui.AddTooltip(strPrompt);
-				ui.PopFont();
-				if (indexPrompt != 0) {
-					ui.AddCombo(indexTagWord, tags);
-					ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-				}
-
-				ui.EndTree();
-			}
+#ifdef USE_OFX_ELEVEN_LABS
+			ui.AddSpacingSeparated();
+			drawImGuiElebenLabs2();
+#endif
 		}
 
 		// No Game
-		if (!ui.isGameMode())
+		//if (!ui.isGameMode())
+		else
 		{
-			//ui.AddLabelHuge("ChatGPT");
-			if (ui.BeginTree("ChatGPT"))
-			{
-				static ofParameter<bool> b{ "SERVER",0 };
-				if (ui.isMaximized()) {
-					//ui.Add(b, OFX_IM_TOGGLE_ROUNDED_MINI);
-					ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
-				}
-				if (ui.isMaximized() && b)
-				{
-					ui.AddSpacing();
-					ui.AddLabelBig("API KEY");
-					ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
-					ui.AddLabelBig("MODEL");
-					ui.Add(model, OFX_IM_TEXT_DISPLAY);
+			drawImGuiGpt1();
 
-					if (ui.AddButton("Restart", OFX_IM_BUTTON))
-					{
-						doGptRestart();
-					}
-					if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
-					{
-						doGptResetEndpointIP();
-					}
-				}
-				ui.AddSpacingSeparated();
+			ui.AddSpacingSeparated();
 
-#ifdef USE_EDITOR_INPUT
-				//ui.PushFont(OFX_IM_FONT_BIG);
-				{
-					if (ui.AddButton("Send"))
-					{
-						doGptSendMessage(editorInput.getText(), bModeConversation);
-					}
-				}
-				//ui.PopFont();
-#endif
-
-				if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
-				{
-					doGptRestart();
-				}
-				if (ui.AddButton("Clear##2", OFX_IM_BUTTON, 2))
-				{
-					doClear();
-				}
-				if (ui.AddButton("Regen##2", OFX_IM_BUTTON, 2, 1))
-				{
-					doGptRegenerate();
-				}
-				if (ui.AddButton("Resend##2", OFX_IM_BUTTON, 2))
-				{
-					doGptResend();
-				}
-				ui.AddSpacingSeparated();
-
-				ui.AddLabelBig("Prompt");
-				ui.AddSpacing();
-
-				ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-				if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
-				ui.AddSpacingSeparated();
-
-				//ui.AddLabel("Role Prompt", 1);
-				static ofParameter<bool> bRole{ "ROLE PROMPT",0 };
-				ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
-				if (bRole) {
-					ui.AddSpacing();
-					ui.AddCombo(indexPrompt, promptsNames);
-					ui.PushFont(SurfingFontTypes(1));
-					ui.AddTooltip(strPrompt);
-					ui.PopFont();
-					if (indexPrompt != 0) {
-						ui.AddCombo(indexTagWord, tags);
-						ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
-					}
-				}
-
-				//--
-
-#ifdef USE_EDITOR_INPUT
-				ui.AddLabelHuge("EDITORS");
-				ui.AddSpacing();
-				ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-#endif
-				if (ui.isMaximized())
-				{
-					ui.AddSpacingSeparated();
-					ui.Add(bModeConversation, OFX_IM_TOGGLE);
-					if (bModeConversation) {
-						ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
-						ui.AddSpacing();
-						if (bGui_GptConversation) {
-							if (ui.AddButton("Reset window")) {
-								doResetWindowConversation();
-							}
-							ui.DrawWidgetsFonts(sizeFontConv, 0);
-							ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
-							s = "Last block will blink";
-							ui.AddTooltip(s);
-							ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
-							s = "Last block will be bigger";
-							ui.AddTooltip(s);
-						}
-					}
-
-#ifdef USE_EDITOR_RESPONSE
-					ui.AddSpacingBigSeparated();
-					ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
-#endif
-					s = gptErrorMessage;
-					if (s != "") {
-						ui.AddSpacingBigSeparated();
-
-						//s = errorCodesNames[indexErrorCode.get()];
-						//ui.AddLabelBig(s);
-						ui.AddLabelBig(s);
-					}
-#if(1)
-#if(1)
-					if (ui.bDebug) {
-						ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
-						if (ui.Add(typeSpin, OFX_IM_STEPPER)) {
-							//bigTextInput.typeWaiting = typeSpin;
-						};
-					}
-#endif
-					ImSpinner::Spinner(bWaitingGpt, typeSpin);
-					//ui.AddSpacingBigSeparated();
-#endif
-				}
-
-				ui.EndTree();
-			}
-		}
-
-		//--
+			//--
 
 #ifdef USE_OFX_ELEVEN_LABS
-		{
-			ui.AddSpacingSeparated();
-			//s = "ElevenLabs";
-			//ui.AddLabelBig(s, 1);
-			if (ui.BeginTree("ElevenLabs"))
-			{
-				ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
-				ui.AddTooltip("Text To Speech\n");
-				if (TTS.bEnable) {
-					ui.Add(TTS.bModeUseCustomServer);
-					if (ui.AddButton("Send", OFX_IM_BUTTON, 2, true)) {
-						TTS.doSend(textLastResponse);
-					}
-					if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2)) {
-						TTS.doCancelRequest();
-					}
-
-					ui.AddCombo(TTS.voiceIndex, TTS.voicesNames);
-					ui.AddTooltip("Voices");
-
-					ui.Add(TTS.stability);
-					ui.Add(TTS.similarity_boost);
-
-					if (ui.AddButton("Replay", OFX_IM_BUTTON)) {
-						TTS.doReplayAudio();
-					}
-					ui.AddTooltip("Replay last audio");
-
-					if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
-						TTS.doReset();
-					}
-
-					if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON)) {
-						TTS.doCancelRequest();
-					}
-					if (ui.AddButton("Restart##tts", OFX_IM_BUTTON)) {
-						TTS.doRestart();
-					}
-
-					s = TTS.getText();
-					ui.PushFont(SurfingFontTypes(1));
-					ui.AddTooltip(s);
-					ui.PopFont();
-
-					ImSpinner::Spinner(TTS.isWaiting(), typeSpin);
-					if (ui.bDebug) {
-						s = TTS.getTextDisplayHelp();
-						ui.AddLabel(s);
-					}
-				}
-				ui.EndTree();
-			}
-		}
+			drawImGuiElebenLabs();
 #endif
-
-		//--
+			//--
 
 #ifdef USE_WHISPER
-		drawImGuiWidgetsWhisper();
+			drawImGuiWidgetsWhisper();
 #endif
-		//--
+			//--
 
-		if (!ui.isGameMode())
-		{
 #ifdef USE_SURF_SUBTITLES
 			if (!bModeConversation)
 			{
@@ -995,9 +1040,8 @@ void ofApp::drawImGuiMain()
 						}
 					}
 					//ui.PopFont();
-					}
-					}
-#endif
+				}
+			}
 			/*
 			if (ui.isMaximized() && ui.bDebug)
 			{
@@ -1012,15 +1056,19 @@ void ofApp::drawImGuiMain()
 				}
 			}
 			*/
-				}
+			//if (!ui.isGameMode())
+			{
+			}
+#endif
+			ui.AddSpacingSeparated();
 
-		ui.AddSpacingSeparated();
-		if (ui.AddButton("Reset##all")) {
-			doReset();
+			if (ui.AddButton("Reset All##all")) {
+				doResetAll();
+			}
 		}
 
 		ui.EndWindow();
-			}
+	}
 }
 
 //--------------------------------------------------------------
@@ -1030,10 +1078,21 @@ void ofApp::drawImGui()
 	subs.drawGui();
 #endif
 
+	//--
+
 	ui.Begin();
 	{
 		//TODO:
 		if (!ui.isGameMode() && ui.isDebug()) ImSpinner::demoSpinners();
+
+		// Open context menu/window
+		// when the user right-clicks on the application window
+		if (ui.isMouseOverAppWindowRightClicked())
+		{
+			ImGui::OpenPopup("my_popup");
+		}
+		//drawWidgetsContextMenu();
+		drawWidgetsContextMenu2();
 
 		//--
 
@@ -1160,6 +1219,15 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 
 	if (ui.BeginWindow(bGui_GptConversation, window_flags))
 	{
+		//// Context menu
+		//if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		//{
+		//	ImGui::OpenPopup("my_popup");
+		//}
+		//drawWidgetsContextMenu();
+
+		//--
+
 		// Scroll control
 		{
 			float scrollY = ImGui::GetScrollY();
@@ -1173,17 +1241,21 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 			// Define the amount of scroll for each arrow key press
 			const float scroll_amount = 5 * ImGui::GetTextLineHeightWithSpacing();
 			// Check whether up or down arrow key is pressed
-			if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
-			{
-				// Decrement the vertical scroll position
-				float new_scroll_y = ImGui::GetScrollY() - scroll_amount;
-				ImGui::SetScrollY(new_scroll_y);
-			}
-			else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
-			{
-				// Increment the vertical scroll position
-				float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
-				ImGui::SetScrollY(new_scroll_y);
+
+			bool bModControl = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl));
+			if (bModControl) {
+				if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+				{
+					// Decrement the vertical scroll position
+					float new_scroll_y = ImGui::GetScrollY() - scroll_amount;
+					ImGui::SetScrollY(new_scroll_y);
+				}
+				else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+				{
+					// Increment the vertical scroll position
+					float new_scroll_y = ImGui::GetScrollY() + scroll_amount;
+					ImGui::SetScrollY(new_scroll_y);
+				}
 			}
 		}
 
@@ -1339,6 +1411,8 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 	ImGui::PopStyleVar();
 }
 
+//--
+
 #ifdef USE_SURF_SUBTITLES
 //--------------------------------------------------------------
 void ofApp::doPopulateText(string s)
@@ -1372,7 +1446,7 @@ void ofApp::doPopulateText(string s)
 	{
 		ofLogNotice("ofApp") << "|";
 	}
-		}
+}
 
 // Function to process a full file and split into blocks/slides.
 //--------------------------------------------------------------
@@ -1389,40 +1463,50 @@ void ofApp::doClearSubsList() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
-	////TODO:
-	////if (ui.isOverInputText())
-	//if (bigTextInput.isOverInputText())
-	//{
-	//	doAttendCallbackKeys();
-	//}
+	//TODO:
+	//if (ui.isOverInputText())
+	if (bigTextInput.isOverInputText())
+	{
+		doAttendCallbackKeys();
+	}
+
+	auto doToggleUI = [this]() {
+		bGui = !bGui;
+
+		//workflow
+		if (!bGui && bigTextInput.bGui_Config) bigTextInput.bGui_Config = 0;
+		};
+
+	//if (key == 'g' || key == 'G') {
+	if (key == OF_KEY_F1) {
+		doToggleUI();
+
+		/*
+		bGui = !bGui;
+
+		//workflow
+		if (!bGui && bigTextInput.bGui_Config) bigTextInput.bGui_Config = 0;
+		*/
+	}
 
 	if (ui.isOverInputText()) return; // skip when editing
 	if (chatGpt.isWaiting()) return;
 
 #ifdef USE_OFX_ELEVEN_LABS
 	// Testing Helpers
-	TTS.keyPressed(key);
+	tts.keyPressed(key);
 #endif
 
 	if (0) return;
 
-	else if (key == 'g' || key == 'G') {
-		bGui = !bGui;
-
-		//workflow
-		if (!bGui && bigTextInput.bGui_Config) bigTextInput.bGui_Config = 0;
-	}
+	else if (key == 'g' || key == 'G') { doToggleUI(); }
 
 	else if (key == OF_KEY_PAGE_UP) { bFlagGoTop = 1; }
 	else if (key == OF_KEY_PAGE_DOWN) { bFlagGoBottom = 1; }
-
 	//else if (key == OF_KEY_UP) { bFlagGoTopStp = 1; }
 	//else if (key == OF_KEY_DOWN) { bFlagGoBottomStp = 1; }
 
-	//// Next prompt
-	//else if (key == OF_KEY_TAB) { doSwapGptPrompt(); }
-
-	// Focus in text input
+	// Focus in text input widget
 	else if (key == OF_KEY_TAB) { bigTextInput.setFocus(); }
 
 	// Clear
@@ -1435,43 +1519,48 @@ void ofApp::keyPressed(int key)
 	//else if (key == OF_KEY_RETURN) { doGptRegenerate(); }
 	//else if (key == ' ') { doGptRegenerate(); }
 
-	//TODO:
-	// Browse history
-	if (key == OF_KEY_LEFT) {
-		if (textHistory.size() == 0) return;
-		i_hist--;
-		i_hist = MAX(0, i_hist);
-		i_hist = MIN(textHistory.size() - 1, i_hist);
-		string s = textHistory[i_hist];
-		bigTextInput.setText(s);
-		textInput.setWithoutEventNotifications(s);
-		//bigTextInput.setFocus();
-	}
-	else if (key == OF_KEY_RIGHT) {
-		if (textHistory.size() == 0) return;
-		i_hist++;
-		i_hist = MAX(0, i_hist);
-		i_hist = MIN(textHistory.size() - 1, i_hist);
-		string s = textHistory[i_hist];
-		bigTextInput.setText(s);
-		textInput.setWithoutEventNotifications(s);
-		//bigTextInput.setFocus();
+	bool bModControl = ofGetKeyPressed(OF_KEY_CONTROL);
+	if (!bModControl) {
+		//TODO:
+		// Browse history
+		if (key == OF_KEY_DOWN) {
+			if (textHistory.size() == 0) return;
+			int i_last = textHistory.size() - 1;
+			i_hist--;
+			i_hist = ofClamp(i_hist, 0, textHistory.size() - 1);
+			string s = textHistory[i_last - i_hist];
+			bigTextInput.setText(s);
+			textInput.setWithoutEventNotifications(s);
+			//bigTextInput.setFocus();
+		}
+		else if (key == OF_KEY_UP) {
+			if (textHistory.size() == 0) return;
+			int i_last = textHistory.size() - 1;
+			i_hist++;
+			i_hist = ofClamp(i_hist, 0, textHistory.size() - 1);
+			string s = textHistory[i_last - i_hist];
+			bigTextInput.setText(s);
+			textInput.setWithoutEventNotifications(s);
+			//bigTextInput.setFocus();
+		}
 	}
 
+	//--
+
 	//TODO: tester
-	if (key == '1') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
-	if (key == '2') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
-	if (key == '3') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
-	if (key == '4') { strBandname = "The Smiths";  doGptSendMessage(strBandname); return; }
-	if (key == '5') { strBandname = "Radio Futura"; doGptSendMessage(strBandname); return; }
-	if (key == '6') { strBandname = "John Frusciante"; doGptSendMessage(strBandname); return; }
-	if (key == '7') { strBandname = "Primus"; doGptSendMessage(strBandname); return; }
-	if (key == '8') { strBandname = "Kraftwerk"; doGptSendMessage(strBandname); return; }
-	if (key == '9') { strBandname = "Portishead"; doGptSendMessage(strBandname); return; }
+	if (key == '1') { strBandname = "Fugazi"; doGptSendMessage(strBandname); return; }
+	if (key == '2') { strBandname = "The Smiths";  doGptSendMessage(strBandname); return; }
+	if (key == '3') { strBandname = "Radio Futura"; doGptSendMessage(strBandname); return; }
+	if (key == '4') { strBandname = "John Frusciante"; doGptSendMessage(strBandname); return; }
+	if (key == '5') { strBandname = "Portishead"; doGptSendMessage(strBandname); return; }
+	if (key == '6') { strBandname = "Jane's Addiction"; doGptSendMessage(strBandname); return; }
+	if (key == '7') { strBandname = "Joy Division"; doGptSendMessage(strBandname); return; }
+	if (key == '8') { strBandname = "Primus"; doGptSendMessage(strBandname); return; }
+	if (key == '9') { strBandname = "Kraftwerk"; doGptSendMessage(strBandname); return; }
 
 	//----
 
-	if (ui.isGameMode()) return;//skip
+	if (ui.isGameMode()) return; // skip
 
 	if (key == 'd') {
 		ui.bDebug = !ui.bDebug;
@@ -1577,7 +1666,7 @@ void ofApp::drawWidgetsEditor()
 		doGptSendMessage(s, bModeConversation);
 		editorInput.clearText();
 	}
-	}
+}
 #endif
 
 //--------------------------------------------------------------
@@ -1624,7 +1713,7 @@ void ofApp::doGptSendMessage(string message) {
 
 	//textHistory.push_back(message);
 
-	sounds[1].play();
+	sounds.play(1);
 
 	// workflow
 
@@ -1651,9 +1740,65 @@ void ofApp::doGptResend() {
 //--------------------------------------------------------------
 void ofApp::doGptRegenerate() {
 	ui.AddToLog("doGptRegenerate()", OF_LOG_WARNING);
-	sounds[5].play();
+	sounds.play(5);
 
 	chatGpt.regenerateAsync();
+}
+
+//--------------------------------------------------------------
+void ofApp::doGptDoAJoke() {
+	ofLogNotice(__FUNCTION__);
+	ui.AddToLog("doGptDoAJoke()", OF_LOG_WARNING);
+
+	string s = "Do a joke based on the following quote:\n";
+	s += "\"" + textLastResponse + "\"";
+	s += "\nThe joke must be short, less than 10 words.";
+	s += "\nStart your answer by warning that you are going to make a joke.";
+	//s += "\nDo not add break lines: all in one single text line.";
+	s += "\nDo a break line starting the reply.";
+
+	//s += "\nPut your sentence between \" \" quotes. And then, add at the end: ";
+	//s += "\n he said, smiling with laughter.";
+
+	bool bSilent = 1;
+	if (!bSilent) doGptSendMessage(s);
+	else {
+		if (bModeConversation) chatGpt.chatWithHistoryAsync(s);
+		else chatGpt.chatAsync(s);
+	}
+
+	// workflow
+	sounds.play(1);
+	// scroll conversation
+	bFlagGoBottom = 1;
+	// focus in text input
+	bigTextInput.setFocus();
+}
+
+//--------------------------------------------------------------
+void ofApp::doGptDoASummarization() {
+	ofLogNotice(__FUNCTION__);
+	ui.AddToLog("doGptDoASummarization()", OF_LOG_WARNING);
+
+	string s = "Do a short summarization of the following quote:\n";
+	s += "\"" + textLastResponse + "\"";
+	s += "\nThe summarization must be short, less than 10 words.";
+	s += "\nStart your answer by saying: \"let me summarize in one sentence.\"";
+	s += "\nDo a break line starting the reply.";
+
+	bool bSilent = 1;
+	if (!bSilent) doGptSendMessage(s);
+	else {
+		if (bModeConversation) chatGpt.chatWithHistoryAsync(s);
+		else chatGpt.chatAsync(s);
+	}
+
+	// workflow
+	sounds.play(1);
+	// scroll conversation
+	bFlagGoBottom = 1;
+	// focus in text input
+	bigTextInput.setFocus();
 }
 
 //--------------------------------------------------------------
@@ -1740,10 +1885,10 @@ void ofApp::doGptGetMessage()
 		editorLastResponse.clearText();//workflow
 		editorLastResponse.addText(textLastResponse + "\n");
 #endif
-		sounds[3].play();
+		sounds.play(3);
 
 #ifdef USE_OFX_ELEVEN_LABS
-		TTS.doSend(textLastResponse);
+		tts.doSend(textLastResponse);
 #endif
 	}
 	else // Error
@@ -1764,7 +1909,7 @@ void ofApp::doGptGetMessage()
 		if (b) ui.AddToLog("doGptResetEndpointIP() Success", OF_LOG_WARNING);
 		else ui.AddToLog("doGptResetEndpointIP() Error", OF_LOG_ERROR);
 
-		sounds[3].play();
+		sounds.play(3);
 	}
 
 	// workflow
@@ -1831,8 +1976,6 @@ void ofApp::exit()
 	ofRemoveListener(ofEvents().windowResized, this, &ofApp::windowResized);
 	ofRemoveListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
 
-	//sounds[0].play();//can't be played bc just closes
-
 	//ofxSurfingHelpers::save(params);
 
 	ofJson configJson;
@@ -1840,67 +1983,6 @@ void ofApp::exit()
 	configJson["model"] = model;
 	ofSavePrettyJson(pathGptSettings, configJson);
 }
-
-#ifdef USE_WHISPER
-
-//--------------------------------------------------------------
-void ofApp::doUpdatedWhisper()
-{
-	string s = whisper.getTextLast();
-	ofLogNotice() << "doUpdatedWhisper(): " << s;
-	doPopulateText(s);
-}
-
-//--------------------------------------------------------------
-void ofApp::drawImGuiWidgetsWhisper()
-{
-	ui.Add(ui.bMinimize, OFX_IM_TOGGLE_BUTTON_ROUNDED);
-	ui.Add(ui.bLog, OFX_IM_TOGGLE_BUTTON_ROUNDED);
-	if (ui.bLog || whisper.bDebug) {
-		ui.AddSpacing();
-		if (ui.Add(whisper.vClear, OFX_IM_BUTTON)) {
-			ui.ClearLog();
-		};
-	}
-	ui.AddSpacingBigSeparated();
-
-	ui.AddLabelHuge("ofxWhisper");
-	ui.AddSpacing();
-	ui.Add(whisper.bEnable, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
-	ui.AddSpacing();
-
-	if (ui.isMaximized())
-	{
-		ui.AddSpacing();
-		ui.Add(whisper.bTimeStamps, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
-		ui.Add(whisper.bSpanish, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
-		s = "Uses another model\n";
-		s += "Requires app restart!";
-		ui.AddTooltip(s);
-		ui.Add(whisper.bHighQuality, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
-		s = "Uses a bigger model\n";
-		s += "Requires app restart!";
-		ui.AddTooltip(s);
-		ui.Add(whisper.step_ms);
-		s = "Default is 500ms\n";
-		s += "Requires app restart!";
-		ui.AddTooltip(s);
-		ui.Add(whisper.length_ms);
-		s = "Default is 5000ms\n";
-		s += "Requires app restart!";
-		ui.AddTooltip(s);
-		ui.AddSpacing();
-		ui.Add(whisper.bDebug, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
-		if (whisper.bDebug) {
-		}
-		ui.AddSpacing();
-		//ui.AddLabel(whisper.getTextLast());
-}
-
-	ui.AddSpacingBigSeparated();
-}
-
-#endif
 
 //--------------------------------------------------------------
 int ofApp::getErrorCodeByCode(ofxChatGPT::ErrorCode errorCode)
@@ -1971,19 +2053,19 @@ void ofApp::doAttendCallbackTextInput()
 void ofApp::doGptRestart()
 {
 	ofLogNotice(__FUNCTION__);
-	sounds[5].play();
+	sounds.play(5);
 
 	setupGpt();
 	doClear(1);
 	setupGptPrompts();
-	doSetGptPrompt(indexPrompt);
+	doGptSetPrompt(indexPrompt);
 }
 
 //--------------------------------------------------------------
 bool ofApp::doGptResetEndpointIP()
 {
 	ofLogNotice(__FUNCTION__);
-	sounds[5].play();
+	sounds.play(5);
 
 	CURL* curl;
 	CURLcode res;
@@ -2036,10 +2118,10 @@ bool ofApp::doGptResetEndpointIP()
 }
 
 //--------------------------------------------------------------
-void ofApp::doReset(bool bSilent)
+void ofApp::doResetAll(bool bSilent)
 {
 	ofLogNotice(__FUNCTION__);
-	if (!bSilent) sounds[5].play();
+	if (!bSilent) sounds.play(5);
 
 	bGui = 1;
 	bGui_GptConversation = 1;
@@ -2058,14 +2140,14 @@ void ofApp::doReset(bool bSilent)
 	//colorAssistant = ofColor(200, 255);
 
 	setupGptPrompts();
-	doSetGptPrompt(0);
+	doGptSetPrompt(0);
 }
 
 //--------------------------------------------------------------
 void ofApp::doClear(bool bSilent)
 {
 	ofLogNotice(__FUNCTION__);
-	if (!bSilent) sounds[4].play();
+	if (!bSilent) sounds.play(4);
 
 	ui.AddToLog("Clear", OF_LOG_WARNING);
 
@@ -2098,9 +2180,11 @@ void ofApp::doClear(bool bSilent)
 //--------------------------------------------------------------
 void ofApp::doAttendCallbackKeys()
 {
-	int i = ofRandom(soundsKeys.size());
-	ofLogNotice(__FUNCTION__) << "key: " << i;
-	soundsKeys[i].play();
+	static float t;
+	if (ofGetElapsedTimef() - t < 100) return;
+	t = ofGetElapsedTimef();
+
+	sounds.playKeys();
 }
 
 //--------------------------------------------------------------
@@ -2108,33 +2192,83 @@ void ofApp::drawWidgetsToTextInput()
 {
 	ui.AddSpacingY(3);
 	ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED_MINI_XS);
+
+	/*
+	// we can't add more widgets here. only if we use SameLine
+	ImGui::SameLine();
+	ImGui::PushItemWidth(0);
+	ImGui::Button("My Button");
+	ImGui::PopItemWidth();
+	*/
 }
 
 //--------------------------------------------------------------
-void ofApp::drawWidgetsToTextInputContext()
+void ofApp::drawWidgetsContextMenu2()
+{
+
+	if (ImGui::BeginPopup("my_popup"))
+	{
+		ImGuiCond cond = ImGuiCond_Always;
+		float w = 400;
+		float h = 100;
+		ImGui::SetNextWindowSizeConstraints(ImVec2(w, 0), ImVec2(FLT_MAX, FLT_MAX));
+		ImGui::SetNextWindowSize(ImVec2(w, h));
+
+		ImVec4 bgCol = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+		ImGui::PushStyleColor(ImGuiCol_PopupBg, bgCol);
+
+		ui.PushFont(SurfingFontTypes(1));
+		{
+			ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexPrompt, promptsNames, true, promptsNames.size());
+
+			ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexTags, tagsNames, true, tagsNames.size());
+
+			if (ui.AddButton("Do a Joke", OFX_IM_BUTTON_BIG, 2)) {
+				doGptDoAJoke();
+			}
+			ui.SameLine();
+			if (ui.AddButton("Make a Summary", OFX_IM_BUTTON_BIG, 2)) {
+				doGptDoASummarization();
+			}
+
+			//ui.AddSpacingSeparated();
+			//ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
+		}
+		ui.PopFont();
+
+		ui.AddSpacingSeparated();
+		if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
+		ImGui::PopStyleColor();
+
+		ImGui::EndPopup();
+	}
+}
+
+//--------------------------------------------------------------
+void ofApp::drawWidgetsContextMenu()
 {
 	//ui.AddButton("A");
 
-	ui.PushFont(SurfingFontTypes(1));
+	//ui.PushFont(SurfingFontTypes(1));
 
-	//TODO:
-	float w = 300;
-	float h = 0;
-	ImGui::SetNextWindowContentSize(ImVec2(w, h));
-	//ImGui::SetNextWindowSizeConstraints(ImVec2(140, 400), ImVec2(w, 400));
-
-	if (ImGui::BeginPopupContextItem("My Context Menu"))
+	if (ImGui::BeginPopup("my_popup"))
 	{
+		//TODO:
+		float w = 200;
+		float h = 0;
+		//ImGui::SetNextWindowSizeConstraints(ImVec2(140, 0), ImVec2(w, 0));
+		ImGui::SetNextWindowSize(ImVec2(w, h));
 
 		ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
 
 		//ui.Add(ui.bGui_GameMode, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
 		ui.DrawWidgetsFonts(sizeFontConv, 0);
-		if (ui.AddButton("Restart##3", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
+		if (ui.AddButton("Restart##3", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON))
 		{
 			doGptRestart();
 		}
-		if (ui.AddButton("Clear##3", OFX_IM_BUTTON, 2))
+		if (ui.AddButton("Clear##3", OFX_IM_BUTTON))
 		{
 			doClear();
 		}
@@ -2142,20 +2276,83 @@ void ofApp::drawWidgetsToTextInputContext()
 		ui.AddTooltip(strPrompt);
 
 		if (indexPrompt != 0) {
-			ui.AddCombo(indexTagWord, tags);
+			ui.AddCombo(indexTags, tagsNames);
 			ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
 		}
 
 #ifdef USE_OFX_ELEVEN_LABS
-		ui.Add(TTS.bEnable, OFX_IM_TOGGLE);
-		if (TTS.bEnable)
-			ui.Add(TTS.bModeUseCustomServer, OFX_IM_TOGGLE_ROUNDED_MINI);
+		ui.Add(tts.bEnable, OFX_IM_TOGGLE);
+		if (tts.bEnable) ui.Add(tts.bModeUseAltServer, OFX_IM_TOGGLE_ROUNDED_MINI);
 #endif
 		ui.AddSpacing();
+
 		if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();
 	}
 
-	ui.PopFont();
+	//ui.PopFont();
 }
+
+//--
+
+#ifdef USE_WHISPER
+
+//--------------------------------------------------------------
+void ofApp::doUpdatedWhisper()
+{
+	string s = whisper.getTextLast();
+	ofLogNotice() << "doUpdatedWhisper(): " << s;
+	doPopulateText(s);
+}
+
+//--------------------------------------------------------------
+void ofApp::drawImGuiWidgetsWhisper()
+{
+	ui.Add(ui.bMinimize, OFX_IM_TOGGLE_BUTTON_ROUNDED);
+	ui.Add(ui.bLog, OFX_IM_TOGGLE_BUTTON_ROUNDED);
+	if (ui.bLog || whisper.bDebug) {
+		ui.AddSpacing();
+		if (ui.Add(whisper.vClear, OFX_IM_BUTTON)) {
+			ui.ClearLog();
+		};
+	}
+	ui.AddSpacingBigSeparated();
+
+	ui.AddLabelHuge("ofxWhisper");
+	ui.AddSpacing();
+	ui.Add(whisper.bEnable, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
+	ui.AddSpacing();
+
+	if (ui.isMaximized())
+	{
+		ui.AddSpacing();
+		ui.Add(whisper.bTimeStamps, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
+		ui.Add(whisper.bSpanish, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
+		s = "Uses another model\n";
+		s += "Requires app restart!";
+		ui.AddTooltip(s);
+		ui.Add(whisper.bHighQuality, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
+		s = "Uses a bigger model\n";
+		s += "Requires app restart!";
+		ui.AddTooltip(s);
+		ui.Add(whisper.step_ms);
+		s = "Default is 500ms\n";
+		s += "Requires app restart!";
+		ui.AddTooltip(s);
+		ui.Add(whisper.length_ms);
+		s = "Default is 5000ms\n";
+		s += "Requires app restart!";
+		ui.AddTooltip(s);
+		ui.AddSpacing();
+		ui.Add(whisper.bDebug, OFX_IM_TOGGLE_BUTTON_ROUNDED_MINI);
+		if (whisper.bDebug) {
+		}
+		ui.AddSpacing();
+		//ui.AddLabel(whisper.getTextLast());
+	}
+
+	ui.AddSpacingBigSeparated();
+}
+
+#endif

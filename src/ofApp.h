@@ -72,6 +72,7 @@
 #endif
 
 #include "ofxWindowApp.h"
+#include "surfingSounds.h"
 
 #include <curl/curl.h>
 
@@ -89,7 +90,6 @@ public:
 
 	void setupParams();
 	void setupInputText();
-	void setupSounds();
 	void startup();
 	void startupDelayed();
 	void drawBg();
@@ -102,6 +102,8 @@ public:
 
 	void drawImGui();
 	void drawImGuiMain();
+	void drawImGuiGpt();
+	void drawImGuiGpt1();
 	void drawImGuiConversation(ofxSurfingGui& ui);
 
 	bool bResetWindowConversation = 0;
@@ -164,8 +166,11 @@ public:
 	ofParameter<bool> bLastBigger{ "LastBigger", false };
 	ofParameter<bool> bLastBlink{ "LastBlink", false };
 
-	ofParameter<bool> bModeOneSlide{ "OneSlide", false };
+	ofParameter<bool> bModeOneSlide{ "OneSlide", false };//for subtitles module
 	ofParameter<bool> bLock{ "Lock", false };
+
+	void doGptDoAJoke();//do a joke related to last text
+	void doGptDoASummarization();//summarize last text in 6 words
 
 	//--
 
@@ -177,7 +182,9 @@ public:
 	void doAttendCallbackClear();
 	void doAttendCallbackKeys();
 	void drawWidgetsToTextInput();
-	void drawWidgetsToTextInputContext();
+
+	void drawWidgetsContextMenu();
+	void drawWidgetsContextMenu2();
 
 	//--
 
@@ -202,7 +209,7 @@ public:
 	// Prompts and Roles
 	void setupGptPrompts();
 	void doRefreshGptPrompts();
-	void doSetGptPrompt(int index);
+	void doGptSetPrompt(int index);
 	void doSwapGptPrompt();//next
 	ofParameterGroup paramsPrompts{ "Prompts" };
 	string strPrompt;
@@ -211,8 +218,8 @@ public:
 	vector<string> promptsNames;
 	vector<string> promptsContents;
 	ofParameter<int> amountResultsPrompt{ "Results", 10, 1, 100 };
-	vector<string> tags{ "music band", "book writer", "film director", "illustrator", "painter" , "philosopher" };
-	ofParameter<int> indexTagWord{ "Tag", 0, 0, tags.size() - 1 };
+	vector<string> tagsNames{ "Music Band", "Book Writer", "Film director", "Movies Actor ", "Illustrator", "Painter" , "Philosopher" };
+	ofParameter<int> indexTags{ "IndexTag", 0, 0, tagsNames.size() - 1 };
 	string tagWord = "-1";
 
 	// Roles (system prompts)
@@ -222,18 +229,8 @@ public:
 		return string("Act as your default ChatGPT behavior \nfollowing the conversation.");
 	}
 
-	// Sentences
-	string doCreateGptRolePrompt1() {
-		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
-		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
-		s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
-		s1 += "These sentences must define " + tagWord + "'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
-		string s2 = "The sentences will be short: less than 7 words each sentence.";
-		return string(s0 + s1 + s2);
-	}
-
 	// Words
-	string doCreateGptRolePrompt2() {
+	string doCreateGptRolePrompt1() {
 		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
 		s0 += "I will pass you a " + tagWord + " name.";
 		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
@@ -241,6 +238,16 @@ public:
 		s2 += "The format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \n";
 		//s2 += "and without a '.' at the end of the line, just include the break line char.";
 		s2 += "start each line with a number and a '.' starting at '1.'";
+		return string(s0 + s1 + s2);
+	}
+
+	// Sentences
+	string doCreateGptRolePrompt2() {
+		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
+		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
+		s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
+		s1 += "These sentences must define " + tagWord + "'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
+		string s2 = "The sentences will be short: less than 7 words each sentence.";
 		return string(s0 + s1 + s2);
 	}
 
@@ -258,32 +265,20 @@ public:
 
 	//--
 
+	SurfingSounds sounds;
+
 	// Bg flash. set to 1 to start.
 	float v = 0;
 
 	ofParameter<int>typeSpin{ "typeSpin", 0, 0, 0 };
 
-	vector<ofSoundPlayer> sounds;
-	vector<ofSoundPlayer> soundsKeys;
-
 	//--
 
-#ifdef USE_SURF_SUBTITLES
-	ofxSurfingTextSubtitle subs;
-	string path;
-	void doPopulateText(string s = "");
-	void doPopulateTextBlocks();
-	void doClearSubsList();
-#endif
-
-#ifdef USE_WHISPER
-	surfingWhisper whisper;
-	void doUpdatedWhisper();
-	void drawImGuiWidgetsWhisper();
-#endif
-
 #ifdef USE_OFX_ELEVEN_LABS
-	ofxElevenLabs TTS;
+	ofxElevenLabs tts;
+	void drawImGuiElebenLabs();
+	void drawImGuiElebenLabs2();
+	void drawImGuiElebenLabsExtras();
 #endif
 
 	//--
@@ -300,7 +295,7 @@ public:
 	bool bDoneStartup = 0;
 	bool bDoneStartupDelayed = 0;
 
-	void doReset(bool bSilent = 0);
+	void doResetAll(bool bSilent = 0);
 
 	ofxWindowApp w;
 	ofxAutosaveGroupTimer g;
@@ -312,4 +307,20 @@ public:
 	}
 
 	void doResetWindowConversation() { bResetWindowConversation = 1; }
+
+	//--
+
+#ifdef USE_SURF_SUBTITLES
+	ofxSurfingTextSubtitle subs;
+	string path;
+	void doPopulateText(string s = "");
+	void doPopulateTextBlocks();
+	void doClearSubsList();
+#endif
+
+#ifdef USE_WHISPER
+	surfingWhisper whisper;
+	void doUpdatedWhisper();
+	void drawImGuiWidgetsWhisper();
+#endif
 };
