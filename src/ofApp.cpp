@@ -161,6 +161,8 @@ void ofApp::setupParams()
 	typeSpin.setMax(ImSpinner::amountSpinners - 1);
 	params.add(typeSpin);
 
+	params.add(indexModel);
+
 	paramsPrompts.add(indexPrompt);
 	paramsPrompts.add(indexTags);
 	paramsPrompts.add(amountResultsPrompt);
@@ -235,15 +237,16 @@ void ofApp::setupGpt(bool bSilent)
 		ofFile f;
 		if (f.doesFileExist(pathGptSettings)) {
 			ofJson configJson = ofLoadJson(pathGptSettings);
-			//will fail if file do not exist
+
 			if (configJson.find("apiKey") != configJson.end())
 				apiKey = configJson["apiKey"].get<string>();
+
 			if (configJson.find("model") != configJson.end())
 				model = configJson["model"].get<string>();
 		}
 		else {
-			apiKey = "your-api-key";
-			model = "gpt-3.5-turbo";
+			apiKey = "<your-api-key>";//deafult
+			model = "gpt-3.5-turbo";//default
 		}
 
 		//--
@@ -256,6 +259,7 @@ void ofApp::setupGpt(bool bSilent)
 		tie(models, errorCode) = chatGpt_.getModelList();
 
 		ui.AddToLog("Available OpenAI GPT models:");
+		modelsNames.clear();
 		for (auto m : models)
 		{
 			if (ofIsStringInString(m, "gpt")) {
@@ -264,7 +268,10 @@ void ofApp::setupGpt(bool bSilent)
 			else {
 				ui.AddToLog(m, OF_LOG_VERBOSE);
 			}
+
+			modelsNames.push_back(m);
 		}
+		indexModel.setMax(modelsNames.size() - 1);
 
 		//--
 
@@ -275,7 +282,6 @@ void ofApp::setupGpt(bool bSilent)
 	//--
 
 	setupGptPrompts();
-	//doGptSetPrompt(0);//default
 }
 
 //--------------------------------------------------------------
@@ -370,6 +376,24 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 			editorLastResponse.bGui = 0;
 		}
 	}
+	else if (n == indexModel.getName())
+	{
+		if (modelsNames.size() == 0) return;//skip out of range
+		if (indexModel > modelsNames.size() - 1) indexModel = modelsNames.size() - 1;//clamp
+		model = modelsNames[indexModel];
+
+		//--
+
+		string s = "MODEL: " + model.get();
+		ui.AddToLog(s, OF_LOG_WARNING);
+
+		// Initialize
+		chatGpt.setup(model.get(), apiKey);
+
+		//workflow
+		doGptSendMessage(s);
+
+	}
 
 	//TODO:
 	else if (n == typeSpin.getName())
@@ -391,7 +415,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 			subs.bGui_List = 0;
 			subs.bGui_Paragraph = 0;
 #endif
-		}
+}
 	}
 
 	//--
@@ -493,8 +517,8 @@ void ofApp::drawBg()
 #else
 			ofClear(colorBg.get());
 #endif
-		}
 	}
+}
 }
 
 //--------------------------------------------------------------
@@ -532,6 +556,7 @@ void ofApp::drawImGuiElebenLabs2()
 	string s = "";
 	if (ui.BeginTree("ElevenLabs"))
 	{
+		ui.AddSpacing();
 		ui.Add(tts.bEnable, OFX_IM_TOGGLE);
 		ui.AddTooltip("Text To Speech\n");
 		if (tts.bEnable) {
@@ -568,6 +593,7 @@ void ofApp::drawImGuiElebenLabs()
 	//ui.AddLabelBig(s, 1);
 	if (ui.BeginTree("ElevenLabs"))
 	{
+		ui.AddSpacing();
 		ui.Add(tts.bEnable, OFX_IM_TOGGLE);
 		ui.AddTooltip("Text To Speech\n");
 		if (tts.bEnable) {
@@ -619,7 +645,7 @@ void ofApp::drawImGuiGpt1()
 
 		static ofParameter<bool> b{ "SERVER",0 };
 		if (ui.isMaximized()) {
-			//ui.Add(b, OFX_IM_TOGGLE_ROUNDED_MINI);
+			ui.AddSpacing();
 			ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
 		}
 		if (ui.isMaximized() && b)
@@ -628,7 +654,10 @@ void ofApp::drawImGuiGpt1()
 			ui.AddLabelBig("API KEY");
 			ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
 			ui.AddLabelBig("MODEL");
-			ui.Add(model, OFX_IM_TEXT_DISPLAY);
+
+			//ui.Add(model, OFX_IM_TEXT_DISPLAY);
+			//ui.AddLabel(model.get());
+			ui.AddCombo(indexModel, modelsNames);
 
 			if (ui.AddButton("Restart", OFX_IM_BUTTON))
 			{
@@ -647,8 +676,8 @@ void ofApp::drawImGuiGpt1()
 			if (ui.AddButton("Send"))
 			{
 				doGptSendMessage(editorInput.getText(), bModeConversation);
-			}
 		}
+	}
 		//ui.PopFont();
 #endif
 
@@ -706,17 +735,19 @@ void ofApp::drawImGuiGpt1()
 			if (bModeConversation) {
 				ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
 				ui.AddSpacing();
-				if (bGui_GptConversation) {
-					if (ui.AddButton("Reset window")) {
-						doResetWindowConversation();
-					}
-					//ui.DrawWidgetsFonts(sizeFontConv, 0);
+				if (bGui_GptConversation)
+				{
 					ui.Add(bLastBlink, OFX_IM_TOGGLE_ROUNDED_MINI);
 					s = "Last block will blink";
 					ui.AddTooltip(s);
 					ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
 					s = "Last block will be bigger";
 					ui.AddTooltip(s);
+					ui.AddSpacing();
+
+					if (ui.AddButton("Reset Layout")) {
+						doResetWindowConversation();
+					}
 				}
 			}
 
@@ -747,11 +778,11 @@ void ofApp::drawImGuiGpt1()
 		}
 
 		ui.EndTree();
-	}
+}
 }
 
 //--------------------------------------------------------------
-void ofApp::drawImGuiGpt()
+void ofApp::drawImGuiGpt2()
 {
 	if (ui.BeginTree("ChatGPT"))
 	{
@@ -877,32 +908,9 @@ void ofApp::drawImGuiMain()
 
 	if (ui.BeginWindow(bGui))
 	{
-		//TODO:
-		/*
-		{
-			//static char name[32] = "Label1";
-			//char buf[64];
-			//sprintf(buf, "Button: %s###Button", name); // ### operator override ID ignoring the preceding label
-			//ImGui::Button(buf);
-			ui.AddButton("A");
-			if (ImGui::BeginPopupContextItem())
-			{
-				ImGui::SeparatorText("Menu");
-
-				//ImGui::Text("Edit name:");
-				//ImGui::InputText("##edit", name, IM_ARRAYSIZE(name));
-				ui.AddMinimizerToggle();
-				ui.AddDebugToggle();
-				ui.AddExtraToggle();
-				if (ImGui::Button("Close"))
-					ImGui::CloseCurrentPopup();
-				ImGui::EndPopup();
-			}
-		}
-		*/
-
 		////TODO:
-		// fix focus isues when conversation window is on top of the z-order
+		// Fix focus isues when conversation window 
+		// is on top of the z-order blocking other windows.
 		//if (0)
 		//{
 		//	if (ofGetFrameNum() % 120 == 0) {
@@ -930,14 +938,11 @@ void ofApp::drawImGuiMain()
 			if (ui.isMaximized())
 			{
 				ui.AddDebugToggle();
-				ui.AddExtraToggle();
+				//ui.AddExtraToggle();
 			}
 			if (ui.isMaximized()) {
 				ui.Add(bLock, OFX_IM_TOGGLE);
 			}
-			ui.AddSpacingBigSeparated();
-
-			drawColorTree();
 		}
 
 		ui.AddSpacingBigSeparated();
@@ -971,7 +976,7 @@ void ofApp::drawImGuiMain()
 		{
 			//--
 
-			drawImGuiGpt();
+			drawImGuiGpt2();
 
 #ifdef USE_OFX_ELEVEN_LABS
 			ui.AddSpacingSeparated();
@@ -1082,8 +1087,10 @@ void ofApp::drawImGui()
 
 	ui.Begin();
 	{
+		//--
+
 		//TODO:
-		if (!ui.isGameMode() && ui.isDebug()) ImSpinner::demoSpinners();
+		//if (!ui.isGameMode() && ui.isDebug()) ImSpinner::demoSpinners();
 
 		// Open context menu/window
 		// when the user right-clicks on the application window
@@ -1091,8 +1098,8 @@ void ofApp::drawImGui()
 		{
 			ImGui::OpenPopup("my_popup");
 		}
-		//drawWidgetsContextMenu();
 		drawWidgetsContextMenu2();
+		//drawWidgetsContextMenu();
 
 		//--
 
@@ -1242,6 +1249,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 			const float scroll_amount = 5 * ImGui::GetTextLineHeightWithSpacing();
 			// Check whether up or down arrow key is pressed
 
+			// Keys ctrl + UP / DOWN
 			bool bModControl = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl));
 			if (bModControl) {
 				if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
@@ -1403,13 +1411,13 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 #endif
 
 		ui.EndWindow();
-	}
+		}
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 
 	ImGui::PopStyleVar();
-}
+	}
 
 //--
 
@@ -1511,6 +1519,8 @@ void ofApp::keyPressed(int key)
 
 	// Clear
 	else if (key == OF_KEY_BACKSPACE) { doClear(); }
+
+	//else if (key == OF_KEY_RETURN) { bigTextInput.doEnterKey(); }
 
 	// Resend last
 	//else if (key == OF_KEY_RETURN) { doGptResend(); }
@@ -1665,7 +1675,7 @@ void ofApp::drawWidgetsEditor()
 		ui.AddToLog(s, OF_LOG_NOTICE);
 		doGptSendMessage(s, bModeConversation);
 		editorInput.clearText();
-	}
+}
 }
 #endif
 
@@ -1750,13 +1760,22 @@ void ofApp::doGptDoAJoke() {
 	ofLogNotice(__FUNCTION__);
 	ui.AddToLog("doGptDoAJoke()", OF_LOG_WARNING);
 
+	//TODO: to allow resend las original response, 
+	// not the joke/summarization itself
+
+	//if(!bLastWasATrick) textLastTrick = textLastResponse;
+
+	int max_words = 10;
+
 	string s = "Do a joke based on the following quote:\n";
 	s += "\"" + textLastResponse + "\"";
-	s += "\nThe joke must be short, less than 10 words.";
+	s += "\nThe joke must be short, less than " + ofToString(max_words) + " words.";
 	s += "\nStart your answer by warning that you are going to make a joke.";
-	//s += "\nDo not add break lines: all in one single text line.";
-	s += "\nDo a break line starting the reply.";
 
+	////s += "\nDo not add break lines: all in one single text line.";
+	//s += "\nDo a double break line starting the whole reply. But put all the others on a single line. Do not add extra spaces between lines.";
+
+	// for ElevenLabs variations
 	//s += "\nPut your sentence between \" \" quotes. And then, add at the end: ";
 	//s += "\n he said, smiling with laughter.";
 
@@ -1780,9 +1799,11 @@ void ofApp::doGptDoASummarization() {
 	ofLogNotice(__FUNCTION__);
 	ui.AddToLog("doGptDoASummarization()", OF_LOG_WARNING);
 
+	int max_words = 10;
+
 	string s = "Do a short summarization of the following quote:\n";
 	s += "\"" + textLastResponse + "\"";
-	s += "\nThe summarization must be short, less than 10 words.";
+	s += "\nThe summarization must be short, less than " + ofToString(max_words) + "  words.";
 	s += "\nStart your answer by saying: \"let me summarize in one sentence.\"";
 	s += "\nDo a break line starting the reply.";
 
@@ -1849,7 +1870,8 @@ void ofApp::doGptGetMessage()
 		//--
 
 		textLastResponse = ofxSurfingHelpers::removeNumbersStartingLines(strGptResponse);
-		ofLogNotice("ofxSurfingTextSubtitle") << endl << textLastResponse;
+		ofLogNotice("ofApp") << textLastResponse;
+		ui.AddToLog(textLastResponse, OF_LOG_NOTICE);
 
 		//--
 
@@ -1860,7 +1882,7 @@ void ofApp::doGptGetMessage()
 			if (bModeOneSlide) subs.doBuildDataTextOneSlideOnly(textLastResponse);
 			else subs.doBuildDataText(textLastResponse);
 #endif
-		}
+	}
 
 		/*
 #ifdef USE_SURF_SUBTITLES
@@ -1890,7 +1912,7 @@ void ofApp::doGptGetMessage()
 #ifdef USE_OFX_ELEVEN_LABS
 		tts.doSend(textLastResponse);
 #endif
-	}
+}
 	else // Error
 	{
 		//tuple<string, ofxChatGPT::ErrorCode> m = ofxChatGPT::getMessage();
@@ -1919,7 +1941,7 @@ void ofApp::doGptGetMessage()
 
 	// focus in text input
 	bigTextInput.setFocus();
-}
+	}
 
 //--------------------------------------------------------------
 void ofApp::doRandomInput()
@@ -2013,6 +2035,7 @@ void ofApp::doAttendCallbackClear()
 	ofLogNotice(__FUNCTION__);
 	//TODO:
 	doClear(); // crash
+	bigTextInput.setFocus();
 }
 
 //--------------------------------------------------------------
@@ -2205,23 +2228,28 @@ void ofApp::drawWidgetsToTextInput()
 //--------------------------------------------------------------
 void ofApp::drawWidgetsContextMenu2()
 {
+	//ImVec4 bgCol = ImColor(1, 0, 0, 1);
+	ImVec4 bgCol = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, bgCol);
 
 	if (ImGui::BeginPopup("my_popup"))
 	{
+		//TODO:
 		ImGuiCond cond = ImGuiCond_Always;
 		float w = 400;
 		float h = 100;
-		ImGui::SetNextWindowSizeConstraints(ImVec2(w, 0), ImVec2(FLT_MAX, FLT_MAX));
-		ImGui::SetNextWindowSize(ImVec2(w, h));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(w, h), ImVec2(FLT_MAX, FLT_MAX));
+		ImGui::SetNextWindowSize(ImVec2(w, h), cond);
 
-		ImVec4 bgCol = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
-		ImGui::PushStyleColor(ImGuiCol_PopupBg, bgCol);
+		ui.AddSpacing();
 
-		ui.PushFont(SurfingFontTypes(1));
+		//ui.PushFont(SurfingFontTypes(1));
 		{
 			ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexPrompt, promptsNames, true, promptsNames.size());
 
-			ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexTags, tagsNames, true, tagsNames.size());
+			if (indexPrompt != 0) {
+				ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexTags, tagsNames, true, tagsNames.size());
+			}
 
 			if (ui.AddButton("Do a Joke", OFX_IM_BUTTON_BIG, 2)) {
 				doGptDoAJoke();
@@ -2234,15 +2262,16 @@ void ofApp::drawWidgetsContextMenu2()
 			//ui.AddSpacingSeparated();
 			//ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
 		}
-		ui.PopFont();
+		//ui.PopFont();
 
-		ui.AddSpacingSeparated();
-		if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
-
-		ImGui::PopStyleColor();
+		ui.AddSpacing();
+		//ui.AddSpacingSeparated();
+		//if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();
 	}
+
+	ImGui::PopStyleColor();
 }
 
 //--------------------------------------------------------------

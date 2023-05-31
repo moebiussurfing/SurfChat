@@ -4,6 +4,10 @@
 
 	TODO
 
+	make a class for main gpt methods 
+
+	fix threads for tts
+
 	add tokens for longer replay
 
 	ui docking
@@ -15,13 +19,11 @@
 
 	scroll tween when added new messages
 
-	add context menu for game mode, minimize, debug etc
-
 	gpt setup/restart, reconnect.
 		make new class SurfGPT.
 		model and error/state
 
-		add temperature, tokens..
+	add temperature, tokens..
 
 	fix < > slides
 		fix 1st/end slide.
@@ -30,6 +32,9 @@
 		save on json file.
 		create prompt struct
 		add new. edit.
+
+	catch reg/numers like 1. 2. and convert to buttons
+		to click and re submit as a new request
 
 */
 
@@ -102,7 +107,7 @@ public:
 
 	void drawImGui();
 	void drawImGuiMain();
-	void drawImGuiGpt();
+	void drawImGuiGpt2();
 	void drawImGuiGpt1();
 	void drawImGuiConversation(ofxSurfingGui& ui);
 
@@ -119,6 +124,9 @@ public:
 	string textLastResponse;
 	ofJson jQuestion;
 	ofJson jResponse;
+
+	string textLastTrick;//tricks could be jokes or summarize spceial commands.
+	bool bLastWasATrick = 0;
 
 	vector<string> textHistory;
 	int i_hist = 0;
@@ -151,6 +159,9 @@ public:
 	bool bGptError = false;
 	int getErrorCodeByCode(ofxChatGPT::ErrorCode e);
 	string gptErrorMessage = "";
+
+	vector<string> modelsNames;
+	ofParameter<int> indexModel{ "IndexModel", 0, 0, 0 };
 
 	// The used server sometimes requires some IP reseting.
 	bool doGptResetEndpointIP();
@@ -218,7 +229,7 @@ public:
 	vector<string> promptsNames;
 	vector<string> promptsContents;
 	ofParameter<int> amountResultsPrompt{ "Results", 10, 1, 100 };
-	vector<string> tagsNames{ "Music Band", "Book Writer", "Film director", "Movies Actor ", "Illustrator", "Painter" , "Philosopher" };
+	vector<string> tagsNames{ "Music Band", "Book Writer", "Film director", "Film Actor", "Film Title", "Illustrator", "Painter" , "Philosopher" };
 	ofParameter<int> indexTags{ "IndexTag", 0, 0, tagsNames.size() - 1 };
 	string tagWord = "-1";
 
@@ -242,12 +253,13 @@ public:
 	}
 
 	// Sentences
+	int max_words = 7;
 	string doCreateGptRolePrompt2() {
 		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
 		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
 		s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
 		s1 += "These sentences must define " + tagWord + "'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
-		string s2 = "The sentences will be short: less than 7 words each sentence.";
+		string s2 = "The sentences will be short: less than " + ofToString(max_words) + " words each sentence.";
 		return string(s0 + s1 + s2);
 	}
 
