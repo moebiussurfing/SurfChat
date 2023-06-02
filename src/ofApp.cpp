@@ -139,6 +139,10 @@ void ofApp::setupParams()
     params.add(ui.bGui_GameMode);
     params.add(bLock);
 
+    bGui_WindowContextMenu.setSerializable(0);
+    bGui_WindowContextMenu.set("ContextMenu", 0);
+    params.add(bGui_WindowContextMenu);
+
     params.add(colorBg);
     params.add(colorAccent);
     params.add(colorUser);
@@ -168,11 +172,29 @@ void ofApp::setupParams()
     paramsPrompts.add(amountResultsPrompt);
     params.add(paramsPrompts);
 
+    // Layout
+    params.add(bigTextInput.windowY);
+    params.add(bigTextInput.windowPadX);
+    params.add(spacingY);
+
     ofAddListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
 
     // Link
     bigTextInput.colorBubble.makeReferenceTo(colorAccent);
     bigTextInput.colorTxt.makeReferenceTo(colorUser);
+
+    // Presets
+#ifdef USE_PRESETS
+    presets.setUiPtr(&ui);
+    paramsPreset.setName("surfCHAT");
+    paramsPreset.add(colorBg);
+    paramsPreset.add(colorAccent);
+    paramsPreset.add(colorUser);
+    paramsPreset.add(colorAssistant);
+    paramsPreset.add(bigTextInput.paramsPreset);
+    paramsPreset.add(spacingY);
+    presets.AddGroup(paramsPreset);
+#endif
 }
 
 //--------------------------------------------------------------
@@ -191,6 +213,7 @@ void ofApp::startup()
     doResetAll(1);
 
     //ofxSurfingHelpers::load(params);
+    g.addGroup(params);
 
     bDoneStartup = 1;
 }
@@ -206,7 +229,7 @@ void ofApp::startupDelayed()
 
     //--
 
-    g.addGroup(params);
+    // g.addGroup(params);
     //ofxSurfingHelpers::load(params);
 }
 
@@ -365,9 +388,14 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
         bigTextInput.bGui_LockMove = bLock;
     }
 
+    else if (n == bGui_WindowContextMenu.getName())
+    {
+        if (bGui_WindowContextMenu) ImGui::OpenPopup("my_popup");
+    }
+
     else if (n == ui.bGui_GameMode.getName())
     {
-        if (ui.bGui_GameMode)
+        if (ui.bGui_GameMode) // Game mode hides many stuff!
         {
             bLock = 1;
             //ui.bMinimize = 1;
@@ -379,6 +407,10 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
             bGui_GptConversation = 1;
             bModeConversation = 1;
             editorLastResponse.bGui = 0;
+
+#ifdef USE_PRESETS
+            presets.bGui = 0;
+#endif
         }
     }
     else if (n == indexModel.getName())
@@ -440,7 +472,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
         setupGptPrompts();
         doGptSetPrompt(indexPrompt);
     }
-    if (n == indexPrompt.getName())
+    else if (n == indexPrompt.getName())
     {
         doGptSetPrompt(indexPrompt);
 
@@ -449,6 +481,14 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
         {
             doGptSendMessage(textHistory.back());
         }
+    }
+
+    // refresh layout
+    else if (n == bigTextInput.windowY.getName() ||
+        n == bigTextInput.windowPadX.getName() ||
+        n == spacingY.getName())
+    {
+        doResetWindowConversation();
     }
 }
 
@@ -559,7 +599,7 @@ void ofApp::draw()
 #endif
 
 #ifdef USE_OFX_ELEVEN_LABS
-    if (ui.bDebug) tts.drawDebugHelp();
+    // if (ui.bDebug) tts.drawDebugHelp();
 #endif
 }
 
@@ -585,11 +625,17 @@ void ofApp::drawImGuiElebenLabs2()
             {
                 tts.doCancelRequest();
             }
-
-            ui.Add(tts.stability, OFX_IM_HSLIDER_MINI);
-            ui.Add(tts.similarity_boost, OFX_IM_HSLIDER_MINI);
+            if (!tts.bModeUseAltServer)
+            {
+                ui.Add(tts.stability, OFX_IM_HSLIDER_MINI);
+                ui.Add(tts.similarity_boost, OFX_IM_HSLIDER_MINI);
+            }
             ui.AddSpacingSeparated();
 
+            //center
+            float ww = ImGui::GetContentRegionAvail().x;
+            float ws = ImSpinner::width;
+            ui.AddSpacingX((ww / 2 - ws / 2));
             ImSpinner::Spinner(tts.isWaiting(), typeSpin);
             if (ui.bDebug)
             {
@@ -651,8 +697,16 @@ void ofApp::drawImGuiElebenLabs()
                 ui.AddLabel(s);
             }
 
-            ui.AddSpacingX(35);
+            //center
+            float ww = ImGui::GetContentRegionAvail().x;
+            float ws = ImSpinner::width;
+            ui.AddSpacingX((ww / 2 - ws / 2));
             ImSpinner::Spinner(tts.isWaiting(), typeSpin);
+            if (ui.bDebug)
+            {
+                s = tts.getTextDisplayHelp();
+                ui.AddLabel(s);
+            }
         }
 
         ui.EndTree();
@@ -805,6 +859,10 @@ void ofApp::drawImGuiGpt1()
                 };
             }
 #endif
+            //center
+            float ww = ImGui::GetContentRegionAvail().x;
+            float ws = ImSpinner::width;
+            ui.AddSpacingX((ww / 2 - ws / 2));
             ImSpinner::Spinner(bWaitingGpt, typeSpin);
             //ui.AddSpacingBigSeparated();
 #endif
@@ -939,14 +997,17 @@ void ofApp::drawImGuiMain()
 
     //--
 
-    ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
-
-    // Constraints
-    //ImVec2 size_min = ImVec2(120, 300);
-    ImVec2 size_min = ImVec2(140, 100);
-    ImVec2 size_max = ImVec2(FLT_MAX, FLT_MAX);
-    ImGui::SetNextWindowSizeConstraints(size_min, size_max);
-
+#if(1)
+    if(bGui)
+    {
+        ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
+        // Constraints
+        //ImVec2 size_min = ImVec2(120, 300);
+        ImVec2 size_min = ImVec2(140, 100);
+        ImVec2 size_max = ImVec2(FLT_MAX, FLT_MAX);
+        ImGui::SetNextWindowSizeConstraints(size_min, size_max);
+    }
+#endif
     if (ui.BeginWindow(bGui))
     {
         ////TODO:
@@ -985,6 +1046,11 @@ void ofApp::drawImGuiMain()
             {
                 ui.Add(bLock, OFX_IM_TOGGLE);
             }
+
+#ifdef USE_PRESETS
+            ui.AddSpacing();
+            ui.Add(presets.bGui, OFX_IM_TOGGLE_ROUNDED);
+#endif
         }
 
         ui.AddSpacingBigSeparated();
@@ -995,6 +1061,17 @@ void ofApp::drawImGuiMain()
         {
             ui.AddLabel("Font Size", 1);
             ui.DrawWidgetsFonts(sizeFontConv, 0);
+            ui.AddSpacingSeparated();
+            ui.AddLabel("LAYOUT");
+            ui.Add(bigTextInput.windowY, OFX_IM_HSLIDER_MINI);
+            ui.Add(bigTextInput.windowPadX, OFX_IM_HSLIDER_MINI);
+            ui.Add(spacingY, OFX_IM_HSLIDER_MINI);
+            ui.Add(bigTextInput.rounded, OFX_IM_HSLIDER_MINI);
+            ui.AddSpacing();
+            if (ui.AddButton("Reset Layout"))
+            {
+                doResetWindowConversation();
+            }
             ui.AddSpacingSeparated();
 
             if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true))
@@ -1141,12 +1218,22 @@ void ofApp::drawImGui()
 
         // Open context menu/window
         // when the user right-clicks on the application window
-        if (ui.isMouseOverAppWindowRightClicked())
+
+	    if (ui.isMouseOverAppWindowRightClicked())
         {
-            ImGui::OpenPopup("my_popup");
+            ImGui::OpenPopup("my_popup"); //momentary
         }
-        drawWidgetsContextMenu2();
-        //drawWidgetsContextMenu();
+	    bool b = ImGui::IsPopupOpen("my_popup");
+        if(b) drawWidgetsContextMenu2();
+
+        // // Toggle
+        // if (ui.isMouseOverAppWindowRightClicked())
+        // {
+        //     bGui_WindowContextMenu = !bGui_WindowContextMenu;
+        // }
+        // bool b = ImGui::IsPopupOpen("my_popup");
+        // if (b) drawWidgetsContextMenu2();
+        // // drawWidgetsContextMenu();
 
         //--
 
@@ -1184,6 +1271,15 @@ void ofApp::drawImGui()
 #ifdef USE_SURF_SUBTITLES
 			subs.drawImGui();
 #endif
+
+            //--
+
+            // Draw
+            // ImGui widgets not windowed
+
+#ifdef USE_PRESETS
+            presets.drawImGui(1);
+#endif
         }
 
         //--
@@ -1220,11 +1316,15 @@ void ofApp::drawImGuiReply(ofxSurfingGui& ui)
 */
 
 //--------------------------------------------------------------
-void ofApp::doResetWindowConvCheck()
+void ofApp::doResetWindowConversationIfFlagged()
 {
     float gapy = 0;
-    float padx = 75;
-    float pady = 25;
+    float padx = 75; // x spacing to app borders
+
+    // y spacing between bubble text and window conversation
+    // float pady = 25;
+    // related to bubble height
+    float pady = spacingY * bigTextInput.getWindowRectangle().getHeight();
 
     float ho = 0;
     ho += 2 * ImGui::GetStyle().WindowBorderSize;
@@ -1257,7 +1357,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
     //--
 
     // Reset
-    doResetWindowConvCheck();
+    doResetWindowConversationIfFlagged();
 
     // scale the scrollbar size
     float scrollbarSize = ImGui::GetStyle().ScrollbarSize;
@@ -1273,6 +1373,8 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 
     if (ui.BeginWindow(bGui_GptConversation, window_flags))
     {
+        if (!ui.bDebug) AddHeaderHeight();
+
         //// Context menu
         //if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         //{
@@ -1297,6 +1399,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
             const float scroll_amount = 5 * ImGui::GetTextLineHeightWithSpacing();
             // Check whether up or down arrow key is pressed
 
+            // TODO: centralize all scroll commands
             // Keys ctrl + UP / DOWN
             bool bModControl = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl));
             if (bModControl)
@@ -1531,6 +1634,8 @@ void ofApp::keyPressed(int key)
         doAttendCallbackKeys();
     }
 
+    //--
+
     auto doToggleUI = [this]()
     {
         bGui = !bGui;
@@ -1552,11 +1657,13 @@ void ofApp::keyPressed(int key)
         */
     }
 
+    //----
+
     if (ui.isOverInputText()) return; // skip when editing
     if (chatGpt.isWaiting()) return;
 
 #ifdef USE_OFX_ELEVEN_LABS
-    // Testing Helpers
+    // For the testing Helpers
     tts.keyPressed(key);
 #endif
 
@@ -1784,6 +1891,17 @@ void ofApp::drawWidgetsEditor()
 #endif
 
 //--------------------------------------------------------------
+void ofApp::doSendSilentMessageToConversation(string message)
+{
+    ofLogNotice(__FUNCTION__) << message;
+    ofJson jMsg;
+    jMsg["message"]["role"] = "user";
+    jMsg["message"]["content"] = message;
+
+    jConversationHistory.push_back(jMsg);
+}
+
+//--------------------------------------------------------------
 void ofApp::doGptSendMessage(string message)
 {
     ofLogNotice(__FUNCTION__) << message;
@@ -1796,12 +1914,10 @@ void ofApp::doGptSendMessage(string message)
     ofJson jMsg;
     jMsg["message"]["role"] = "user";
     jMsg["message"]["content"] = message;
-
-    jConversationHistory.push_back(jMsg);
-
+    jConversationHistory.push_back(jMsg);//set to chat conversation window
     ofLogVerbose("ofApp") << "User: " << message;
 
-    jQuestion = jMsg;
+    // jQuestion = jMsg;
     jResponse = ofJson();
 
     bWaitingGpt = 1;
@@ -1823,7 +1939,7 @@ void ofApp::doGptSendMessage(string message)
 
     // Submit
     //message = "\n" + message;
-    message = message;
+    // message = message;
     if (bModeConversation) chatGpt.chatWithHistoryAsync(message);
     else chatGpt.chatAsync(message);
 
@@ -1881,7 +1997,7 @@ void ofApp::doGptDoAJoke()
     s += "\nThe joke must be short, less than " + ofToString(max_words) + " words.";
     s += "\nStart your answer by warning that you are going to make a joke.";
 
-    ////s += "\nDo not add break lines: all in one single text line.";
+    s += "\nBefore return the final text, remove break lines: put all sentenced in one single text line.";
     //s += "\nDo a double break line starting the whole reply. But put all the others on a single line. Do not add extra spaces between lines.";
 
     // for ElevenLabs variations
@@ -1902,6 +2018,8 @@ void ofApp::doGptDoAJoke()
     bFlagGoBottom = 1;
     // focus in text input
     bigTextInput.setFocus();
+
+    doSendSilentMessageToConversation("Joke");
 }
 
 //--------------------------------------------------------------
@@ -1932,6 +2050,8 @@ void ofApp::doGptDoASummarization()
     bFlagGoBottom = 1;
     // focus in text input
     bigTextInput.setFocus();
+
+    doSendSilentMessageToConversation("Summarize");
 }
 
 //--------------------------------------------------------------
@@ -2157,8 +2277,10 @@ int ofApp::getErrorCodeByCode(ofxChatGPT::ErrorCode errorCode)
 void ofApp::doAttendCallbackClear()
 {
     ofLogNotice(__FUNCTION__);
+
     //TODO:
-    doClear(); // crash
+    // doClear(); // crash
+    doClearAll();
     bigTextInput.setFocus();
 }
 
@@ -2204,7 +2326,9 @@ void ofApp::doGptRestart()
     sounds.play(5);
 
     setupGpt();
+
     doClear(1);
+
     setupGptPrompts();
     doGptSetPrompt(indexPrompt);
 }
@@ -2296,6 +2420,17 @@ void ofApp::doResetAll(bool bSilent)
 }
 
 //--------------------------------------------------------------
+void ofApp::doClearAll()
+{
+    ofLogNotice(__FUNCTION__);
+
+    bWaitingGpt = 0;
+
+    //TODO:
+    doGptRestart();
+}
+
+//--------------------------------------------------------------
 void ofApp::doClear(bool bSilent)
 {
     ofLogNotice(__FUNCTION__);
@@ -2303,7 +2438,10 @@ void ofApp::doClear(bool bSilent)
 
     ui.AddToLog("Clear", OF_LOG_WARNING);
 
-    chatGpt.clear();
+    // //TODO:
+    // chatGpt.clear();
+    // chatGpt.stopThread();
+    // // chatGpt.();
 
     //TODO; force
     chatGpt.stopThread();
@@ -2358,7 +2496,7 @@ void ofApp::drawWidgetsToTextInput()
 //--------------------------------------------------------------
 void ofApp::drawWidgetsContextMenu2()
 {
-    //ImVec4 bgCol = ImColor(1, 0, 0, 1);
+    // Bg
     ImVec4 bgCol = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
     ImGui::PushStyleColor(ImGuiCol_PopupBg, bgCol);
 
@@ -2373,7 +2511,9 @@ void ofApp::drawWidgetsContextMenu2()
 
         ui.AddSpacing();
 
-        //ui.PushFont(SurfingFontTypes(1));
+        static bool big_font=0;
+        if(big_font) ui.PushFont(SurfingFontTypes(1));
+
         {
             ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexPrompt, promptsNames, true, promptsNames.size());
 
@@ -2382,12 +2522,12 @@ void ofApp::drawWidgetsContextMenu2()
                 ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexTags, tagsNames, true, tagsNames.size());
             }
 
-            if (ui.AddButton("Do a Joke", OFX_IM_BUTTON_BIG, 2))
+            if (ui.AddButton("Joke", OFX_IM_BUTTON_BIG, 2))
             {
                 doGptDoAJoke();
             }
             ui.SameLine();
-            if (ui.AddButton("Make a Summary", OFX_IM_BUTTON_BIG, 2))
+            if (ui.AddButton("Summarize", OFX_IM_BUTTON_BIG, 2))
             {
                 doGptDoASummarization();
             }
@@ -2395,7 +2535,8 @@ void ofApp::drawWidgetsContextMenu2()
             //ui.AddSpacingSeparated();
             //ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
         }
-        //ui.PopFont();
+        
+        if(big_font) ui.PopFont();
 
         ui.AddSpacing();
         //ui.AddSpacingSeparated();
@@ -2417,10 +2558,13 @@ void ofApp::drawWidgetsContextMenu()
     if (ImGui::BeginPopup("my_popup"))
     {
         //TODO:
+        float x = 0;
+        float y = 0;
         float w = 200;
         float h = 0;
         //ImGui::SetNextWindowSizeConstraints(ImVec2(140, 0), ImVec2(w, 0));
         ImGui::SetNextWindowSize(ImVec2(w, h));
+        // ImGui::SetNextWindowPos(ImVec2(x, y));
 
         ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
 
@@ -2519,3 +2663,25 @@ void ofApp::drawImGuiWidgetsWhisper()
 }
 
 #endif
+
+//--------------------------------------------------------------
+void ofApp::windowResized(ofResizeEventArgs& resize)
+{
+    static float _w = -1;
+    static float _h = -1;
+    bool b = 0;
+    if (_w != resize.width)
+    {
+        _w = resize.width;
+        b = 1;
+    }
+    if (_h != resize.height)
+    {
+        _h = resize.height;
+        b = 1;
+    }
+    if (!b) return; // skip if not changed
+
+    ofLogVerbose("ofApp::windowResized") << resize.width << "," << resize.height;
+    doResetWindowConversation();
+}
