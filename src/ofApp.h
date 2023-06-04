@@ -57,6 +57,10 @@
 
 #include "ofMain.h"
 
+// //TODO:
+// #define IMGUI_DEFINE_MATH_OPERATORS
+// #include "imgui_demo.cpp"
+
 #include "ChatThread.h"
 
 #include "ofxSurfingHelpers.h"
@@ -119,9 +123,9 @@ public:
     void drawImGuiGpt2();
     void drawImGuiGpt1();
     void drawImGuiConversation(ofxSurfingGui& ui);
-
-    bool bResetWindowConversation = 0;
-    void doResetWindowConversationIfFlagged();
+bool bIsInteractingWindowConversation=0;
+    bool bRefreshWindowConversation = 0;
+    void doRefreshWindowConversationIfFlagged();
 
     bool bFlagGoBottom = 0;
     bool bFlagGoTop = 0;
@@ -210,8 +214,10 @@ public:
     void doAttendCallbackKeys();
     void drawWidgetsToTextInput();
     ofParameter<float> spacingY{"SpacingY", 0, 0, 1};
-    //spaciong between tesdt input and window conversation
-    void drawWidgetsContextMenu();
+    ofParameter<float> spacingX{"SpacingX", 0, 0, 1};
+    //spacing between text input and window conversation
+    ofParameter<bool> bBottomTextInput{"Bottom", false};
+    void drawWidgetsContextMenu1();
     void drawWidgetsContextMenu2();
     ofParameter<bool> bGui_WindowContextMenu;
 
@@ -321,7 +327,7 @@ public:
 
 #ifdef USE_OFX_ELEVEN_LABS
     ofxElevenLabs tts;
-    void drawImGuiElebenLabs();
+    void drawImGuiElebenLabs1();
     void drawImGuiElebenLabs2();
     void drawImGuiElebenLabsExtras();
 #endif
@@ -347,7 +353,8 @@ public:
 
     void windowResized(ofResizeEventArgs& resize);
 
-    void doResetWindowConversation() { bResetWindowConversation = 1; }
+    void doRefreshWindowConversation();
+    void doResetWindowConversation();
 
     //--
 

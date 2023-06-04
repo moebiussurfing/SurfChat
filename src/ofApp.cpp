@@ -1,9 +1,10 @@
 ﻿#include "ofApp.h"
+#include "ofApp.h"
 
 //--------------------------------------------------------------
 void ofApp::setupInputText()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     textInput.makeReferenceTo(bigTextInput.textInput);
     eTextInput = textInput.newListener([this](string& s)
@@ -46,7 +47,7 @@ void ofApp::setupInputText()
 //--------------------------------------------------------------
 void ofApp::setup()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     ofAddListener(ofEvents().windowResized, this, &ofApp::windowResized);
 
@@ -132,7 +133,7 @@ void ofApp::setup()
 //--------------------------------------------------------------
 void ofApp::setupParams()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     params.add(bGui);
     params.add(bigTextInput.bGui);
@@ -173,26 +174,32 @@ void ofApp::setupParams()
     params.add(paramsPrompts);
 
     // Layout
+    params.add(bBottomTextInput);
     params.add(bigTextInput.windowY);
     params.add(bigTextInput.windowPadX);
+    params.add(spacingX);
     params.add(spacingY);
 
     ofAddListener(params.parameterChangedE(), this, &ofApp::Changed_Params);
 
     // Link
+    bigTextInput.bBottomTextInput.makeReferenceTo(bBottomTextInput);
     bigTextInput.colorBubble.makeReferenceTo(colorAccent);
     bigTextInput.colorTxt.makeReferenceTo(colorUser);
 
     // Presets
 #ifdef USE_PRESETS
-    presets.setUiPtr(&ui);
-    paramsPreset.setName("surfCHAT");
+    paramsPreset.setName("surfChat");
     paramsPreset.add(colorBg);
     paramsPreset.add(colorAccent);
     paramsPreset.add(colorUser);
     paramsPreset.add(colorAssistant);
     paramsPreset.add(bigTextInput.paramsPreset);
+    paramsPreset.add(spacingX);
     paramsPreset.add(spacingY);
+    paramsPreset.add(bBottomTextInput);
+
+    presets.setUiPtr(&ui);
     presets.AddGroup(paramsPreset);
 #endif
 }
@@ -200,7 +207,7 @@ void ofApp::setupParams()
 //--------------------------------------------------------------
 void ofApp::startup()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     setupGpt(0);
 
@@ -221,7 +228,7 @@ void ofApp::startup()
 //--------------------------------------------------------------
 void ofApp::startupDelayed()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     doRefreshGptPrompts();
 
@@ -236,7 +243,7 @@ void ofApp::startupDelayed()
 //--------------------------------------------------------------
 void ofApp::setupGpt(bool bSilent)
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     //if(!bSilent) sounds.play(5);
 
     //if (apiKey.get() == "")
@@ -314,7 +321,7 @@ void ofApp::setupGpt(bool bSilent)
 //--------------------------------------------------------------
 void ofApp::doRefreshGptPrompts()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     tagWord = tagsNames[indexTags.get()];
     setupGptPrompts();
@@ -324,7 +331,7 @@ void ofApp::doRefreshGptPrompts()
 //--------------------------------------------------------------
 void ofApp::setupGptPrompts()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     // Create prompts
     promptsNames.clear();
@@ -336,7 +343,7 @@ void ofApp::setupGptPrompts()
 
     indexPrompt.setMax(promptsNames.size() - 1);
 
-    ofLogNotice(__FUNCTION__) << ofToString(promptsNames);
+    ofLogNotice("ofApp") << ofToString(promptsNames);
 
     promptsContents.clear();
     promptsContents.push_back(doCreateGptRolePrompt0());
@@ -352,7 +359,7 @@ void ofApp::doGptSetPrompt(int index)
 
     //if (indexPrompt == index) return;//skip if not changed
 
-    ofLogNotice(__FUNCTION__) << index;
+    ofLogNotice("ofApp") << index;
     //sounds.play(5);
 
     ui.AddToLog("doGptSetPrompt(" + ofToString(index) + ")", OF_LOG_WARNING);
@@ -373,6 +380,8 @@ void ofApp::doGptSetPrompt(int index)
     // Set Role prompt
     chatGpt.setSystemMessage(strPrompt);
 
+    doSendSilentMessageToConversation(strPrompt);
+
     ui.AddToLog("Prompt: " + promptName, OF_LOG_VERBOSE);
     ui.AddToLog(strPrompt, OF_LOG_VERBOSE);
 }
@@ -381,7 +390,7 @@ void ofApp::doGptSetPrompt(int index)
 void ofApp::Changed_Params(ofAbstractParameter& e)
 {
     string n = e.getName();
-    ofLogNotice(__FUNCTION__) << n << " : " << e;
+    ofLogNotice("ofApp") << n << " : " << e;
 
     if (n == bLock.getName())
     {
@@ -390,7 +399,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 
     else if (n == bGui_WindowContextMenu.getName())
     {
-        if (bGui_WindowContextMenu) ImGui::OpenPopup("my_popup");
+        // if (bGui_WindowContextMenu) ImGui::OpenPopup("my_popup");
     }
 
     else if (n == ui.bGui_GameMode.getName())
@@ -398,8 +407,8 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
         if (ui.bGui_GameMode) // Game mode hides many stuff!
         {
             bLock = 1;
-            //ui.bMinimize = 1;
             ui.bDebug = 0;
+            //ui.bMinimize = 1;
             ui.bLog = 0;
             ui.bExtra = 0;
             bigTextInput.bGui = 1;
@@ -428,7 +437,8 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
         chatGpt.setup(model.get(), apiKey);
 
         //workflow
-        doGptSendMessage(s);
+        doSendSilentMessageToConversation(s);
+        // doGptSendMessage(s);
     }
 
     //TODO:
@@ -444,7 +454,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
     }
     else if (n == bModeConversation.getName())
     {
-        //workflow
+        // workflow
         if (bModeConversation)
         {
 #ifdef USE_SURF_SUBTITLES
@@ -476,7 +486,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
     {
         doGptSetPrompt(indexPrompt);
 
-        //workflow
+        // workflow
         if (textHistory.size() > 0)
         {
             doGptSendMessage(textHistory.back());
@@ -486,22 +496,24 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
     // refresh layout
     else if (n == bigTextInput.windowY.getName() ||
         n == bigTextInput.windowPadX.getName() ||
+        n == bBottomTextInput.getName() ||
+        n == spacingX.getName() ||
         n == spacingY.getName())
     {
-        doResetWindowConversation();
+        doRefreshWindowConversation();
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    //ofLogNotice(__FUNCTION__) << "ofGetFrameNum:" << ofGetFrameNum();
+    //ofLogNotice("ofApp") << "ofGetFrameNum:" << ofGetFrameNum();
 
     if (bDoneStartup)
     {
         if (!bDoneStartupDelayed)
         {
-            ofLogNotice(__FUNCTION__) << "ofGetFrameNum:" << ofGetFrameNum();
+            ofLogNotice("ofApp") << "ofGetFrameNum:" << ofGetFrameNum();
             startupDelayed();
         }
     }
@@ -649,7 +661,7 @@ void ofApp::drawImGuiElebenLabs2()
 }
 
 //--------------------------------------------------------------
-void ofApp::drawImGuiElebenLabs()
+void ofApp::drawImGuiElebenLabs1()
 {
     string s = "";
 
@@ -720,46 +732,15 @@ void ofApp::drawImGuiGpt1()
     //ui.AddLabelHuge("ChatGPT");
     if (ui.BeginTree("ChatGPT"))
     {
+        ui.AddSpacing();
         string s = "";
-
-        static ofParameter<bool> b{"SERVER", 0};
-        if (ui.isMaximized())
-        {
-            ui.AddSpacing();
-            ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
-        }
-        if (ui.isMaximized() && b)
-        {
-            ui.AddSpacing();
-            ui.AddLabelBig("API KEY");
-            ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
-            ui.AddLabelBig("MODEL");
-
-            //ui.Add(model, OFX_IM_TEXT_DISPLAY);
-            //ui.AddLabel(model.get());
-            ui.AddCombo(indexModel, modelsNames);
-
-            if (ui.AddButton("Restart", OFX_IM_BUTTON))
-            {
-                doGptRestart();
-            }
-            if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
-            {
-                doGptResetEndpointIP();
-            }
-        }
-        ui.AddSpacingSeparated();
-
-#ifdef USE_EDITOR_INPUT
-		//ui.PushFont(OFX_IM_FONT_BIG);
-		{
-			if (ui.AddButton("Send"))
-			{
-				doGptSendMessage(editorInput.getText(), bModeConversation);
-		}
-	}
-		//ui.PopFont();
+        ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
+        if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
+        ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED);
+#ifdef USE_EDITOR_RESPONSE
+        ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
 #endif
+        ui.AddSpacingSeparated();
 
         if (ui.AddButton("Restart##2", bGptError ? OFX_IM_BUTTON_BORDER_BLINK : OFX_IM_BUTTON, 2, 1))
         {
@@ -779,17 +760,58 @@ void ofApp::drawImGuiGpt1()
         }
         ui.AddSpacingSeparated();
 
-        ui.AddLabelBig("Prompt");
-        ui.AddSpacing();
+        // static ofParameter<bool> b{"SERVER", 0};
+        // if (ui.isMaximized())
+        // {
+        //     ui.AddSpacing();
+        //     ui.Add(b, OFX_IM_TOGGLE_BORDER_BLINK);
+        // }
+        // if (ui.isMaximized() && b)
+        if (ui.isMaximized())
+        {
+            if (ui.BeginTree("SERVER"))
+            {
+                ui.AddSpacing();
+                ui.AddLabelBig("API KEY");
+                ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
+                ui.AddLabelBig("MODEL");
 
-        ui.Add(bigTextInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-        if (ui.isMaximized() && bigTextInput.bGui) ui.Add(bigTextInput.bGui_Config, OFX_IM_TOGGLE_ROUNDED_SMALL);
+                //ui.Add(model, OFX_IM_TEXT_DISPLAY);
+                //ui.AddLabel(model.get());
+                ui.AddCombo(indexModel, modelsNames);
+
+                if (ui.AddButton("Restart", OFX_IM_BUTTON))
+                {
+                    doGptRestart();
+                }
+                if (ui.AddButton("ResetIP", OFX_IM_BUTTON))
+                {
+                    doGptResetEndpointIP();
+                }
+                ui.EndTree();
+            }
+        }
         ui.AddSpacingSeparated();
 
-        //ui.AddLabel("Role Prompt", 1);
-        static ofParameter<bool> bRole{"ROLE PROMPT", 0};
-        ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
-        if (bRole)
+#ifdef USE_EDITOR_INPUT
+        		//ui.PushFont(OFX_IM_FONT_BIG);
+        		{
+        			if (ui.AddButton("Send"))
+        			{
+        				doGptSendMessage(editorInput.getText(), bModeConversation);
+        		    }
+                }
+        		//ui.PopFont();
+#endif
+
+        // ui.AddLabelBig("Prompt");
+        // ui.AddSpacing();
+
+        // //ui.AddLabel("Role Prompt", 1);
+        // static ofParameter<bool> bRole{"ROLE PROMPT", 0};
+        // ui.Add(bRole, OFX_IM_TOGGLE_BORDER_BLINK);
+        // if (bRole)
+        if (ui.BeginTree("ROLE PROMPT"))
         {
             ui.AddSpacing();
             ui.AddCombo(indexPrompt, promptsNames);
@@ -801,22 +823,18 @@ void ofApp::drawImGuiGpt1()
                 ui.AddCombo(indexTags, tagsNames);
                 ui.Add(amountResultsPrompt, OFX_IM_STEPPER);
             }
+            ui.EndTree();
         }
 
         //--
 
-#ifdef USE_EDITOR_INPUT
-		ui.AddLabelHuge("EDITORS");
-		ui.AddSpacing();
-		ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
-#endif
-        if (ui.isMaximized())
+        if (ui.isMaximized() && bGui_GptConversation)
         {
             ui.AddSpacingSeparated();
-            ui.Add(bModeConversation, OFX_IM_TOGGLE);
-            if (bModeConversation)
+            // ui.Add(bModeConversation, OFX_IM_TOGGLE);
+            // if (bModeConversation)
+            if (ui.BeginTree("CONVERSATION"))
             {
-                ui.Add(bGui_GptConversation, OFX_IM_TOGGLE_ROUNDED_MINI);
                 ui.AddSpacing();
                 if (bGui_GptConversation)
                 {
@@ -826,19 +844,16 @@ void ofApp::drawImGuiGpt1()
                     ui.Add(bLastBigger, OFX_IM_TOGGLE_ROUNDED_MINI);
                     s = "Last block will be bigger";
                     ui.AddTooltip(s);
-                    ui.AddSpacing();
-
-                    if (ui.AddButton("Reset Layout"))
-                    {
-                        doResetWindowConversation();
-                    }
+                    // ui.AddSpacing();
+                    // if (ui.AddButton("Reset Layout"))
+                    // {
+                    //     doResetWindowConversation();
+                    // }
                 }
+                ui.EndTree();
             }
+            // ui.AddSpacingBigSeparated();
 
-#ifdef USE_EDITOR_RESPONSE
-            ui.AddSpacingBigSeparated();
-            ui.Add(editorLastResponse.bGui, OFX_IM_TOGGLE_ROUNDED_MINI);
-#endif
             s = gptErrorMessage;
             if (s != "")
             {
@@ -849,14 +864,14 @@ void ofApp::drawImGuiGpt1()
                 ui.AddLabelBig(s);
             }
 #if(1)
-#if(1)
+#if(0)//TODO:
             if (ui.bDebug)
             {
                 ui.Add(bWaitingGpt, OFX_IM_CHECKBOX);
                 if (ui.Add(typeSpin, OFX_IM_STEPPER))
                 {
                     //bigTextInput.typeWaiting = typeSpin;
-                };
+                }
             }
 #endif
             //center
@@ -865,6 +880,12 @@ void ofApp::drawImGuiGpt1()
             ui.AddSpacingX((ww / 2 - ws / 2));
             ImSpinner::Spinner(bWaitingGpt, typeSpin);
             //ui.AddSpacingBigSeparated();
+#endif
+
+#ifdef USE_EDITOR_INPUT
+            ui.AddLabelHuge("EDITORS");
+            ui.AddSpacing();
+            ui.Add(editorInput.bGui, OFX_IM_TOGGLE_ROUNDED);
 #endif
         }
 
@@ -965,40 +986,10 @@ void ofApp::drawImGuiMain()
         }
     };
 
-    //#ifdef USE_OFX_ELEVEN_LABS
-    //	static auto drawElevenLabsExtras = [this]() {
-    //		ui.AddSpacing();
-    //		if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
-    //			tts.doReset();
-    //		}
-    //		ui.AddTooltip("Reset settings");
-    //
-    //		if (ui.AddButton("Replay##tts", OFX_IM_BUTTON, 2, 1)) {
-    //			tts.doReplayAudio();
-    //		}
-    //		ui.AddTooltip("Replay last audio");
-    //
-    //		if (ui.AddButton("Resend##tts", OFX_IM_BUTTON, 2)) {
-    //			tts.doResend();
-    //		}
-    //		ui.AddTooltip("Resend last text");
-    //
-    //		if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON, 2, 1)) {
-    //			tts.doCancelRequest();
-    //		}
-    //		ui.AddTooltip("Force stop request");
-    //
-    //		if (ui.AddButton("Restart##tts", OFX_IM_BUTTON, 2)) {
-    //			tts.doRestart();
-    //		}
-    //		ui.AddTooltip("Restart connection");
-    //		};
-    //#endif
-
     //--
 
-#if(1)
-    if(bGui)
+#if 1
+    if (bGui)
     {
         ImGui::SetNextWindowSize(ImVec2(230, 0), ImGuiCond_FirstUseEver);
         // Constraints
@@ -1010,20 +1001,21 @@ void ofApp::drawImGuiMain()
 #endif
     if (ui.BeginWindow(bGui))
     {
-        ////TODO:
-        // Fix focus isues when conversation window 
+        //TODO:
+        //workaround
+        // Fix focus issues when conversation window 
         // is on top of the z-order blocking other windows.
-        //if (0)
-        //{
-        //	if (ofGetFrameNum() % 120 == 0) {
-        //		// Bring "My Window" to the top of the z-order if it's not already in the front
-        //		if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
-        //		{
-        //			ImGui::SetWindowFocus(nullptr);
-        //			ImGui::SetWindowFocus("My Window");
-        //		}
-        //	}
-        //}
+        if (1)
+        {
+            if (ofGetFrameNum() % 120 == 0 && !bIsInteractingWindowConversation)
+            {
+                ui.setWindowFocused(bGui);
+                //TODO; not works bc not inside the same window. needs another approach
+                // #ifdef USE_PRESETS
+                //                 ui.setWindowFocused(presets.bGui);
+                // #endif
+            }
+        }
 
         string s;
 
@@ -1044,7 +1036,7 @@ void ofApp::drawImGuiMain()
             }
             if (ui.isMaximized())
             {
-                ui.Add(bLock, OFX_IM_TOGGLE);
+                ui.Add(bLock, OFX_IM_TOGGLE_ROUNDED_MINI);
             }
 
 #ifdef USE_PRESETS
@@ -1062,28 +1054,38 @@ void ofApp::drawImGuiMain()
             ui.AddLabel("Font Size", 1);
             ui.DrawWidgetsFonts(sizeFontConv, 0);
             ui.AddSpacingSeparated();
-            ui.AddLabel("LAYOUT");
-            ui.Add(bigTextInput.windowY, OFX_IM_HSLIDER_MINI);
-            ui.Add(bigTextInput.windowPadX, OFX_IM_HSLIDER_MINI);
-            ui.Add(spacingY, OFX_IM_HSLIDER_MINI);
-            ui.Add(bigTextInput.rounded, OFX_IM_HSLIDER_MINI);
-            ui.AddSpacing();
-            if (ui.AddButton("Reset Layout"))
+
+            // ui.AddLabelBig("LAYOUT");
+            if (ui.BeginTree("Layout"))
             {
-                doResetWindowConversation();
+                ui.AddSpacing();
+                // ui.AddLabelBig("TextInput");
+                ofxImGuiSurfing::AddToggleNamed(bBottomTextInput, "Bottom", "Top");
+                ui.Add(bigTextInput.windowPadX, OFX_IM_HSLIDER_MINI);
+                ui.Add(bigTextInput.windowY, OFX_IM_HSLIDER_MINI);
+                // ui.AddLabelBig("Conversation");
+                ui.Add(spacingX, OFX_IM_HSLIDER_MINI);
+                ui.Add(spacingY, OFX_IM_HSLIDER_MINI);
+                ui.Add(bigTextInput.rounded, OFX_IM_HSLIDER_MINI);
+                ui.AddSpacing();
+                if (ui.AddButton("Reset Layout"))
+                {
+                    doResetWindowConversation();
+                }
+                ui.EndTree();
             }
             ui.AddSpacingSeparated();
 
-            if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true))
-            {
-                bFlagGoTop = 1;
-            }
-            ui.SameLine();
-            if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2))
-            {
-                bFlagGoBottom = 1;
-            }
-            ui.AddSpacingSeparated();
+            // if (ui.AddButton("Top", OFX_IM_BUTTON, 2, true))
+            // {
+            //     bFlagGoTop = 1;
+            // }
+            // ui.SameLine();
+            // if (ui.AddButton("Bottom", OFX_IM_BUTTON, 2))
+            // {
+            //     bFlagGoBottom = 1;
+            // }
+            // ui.AddSpacingSeparated();
 
             drawColorTree();
 
@@ -1116,7 +1118,7 @@ void ofApp::drawImGuiMain()
             //--
 
 #ifdef USE_OFX_ELEVEN_LABS
-            drawImGuiElebenLabs();
+            drawImGuiElebenLabs1();
 #endif
             //--
 
@@ -1183,9 +1185,6 @@ void ofApp::drawImGuiMain()
 				}
 			}
 			*/
-			//if (!ui.isGameMode())
-			{
-			}
 #endif
         }
 
@@ -1211,6 +1210,41 @@ void ofApp::drawImGui()
 
     ui.Begin();
     {
+        bIsInteractingWindowConversation = 0;
+
+        //--
+
+        //TODO: not working..
+        //send conversation window to background in z-order
+#if 0
+        if (ofGetFrameNum() % 120 == 0)
+        {
+            const char* windowName = bGui_GptConversation.getName().c_str();
+            // The name of the window to send to background
+            // ImGuiContext* _context = ImGui::GetCurrentContext();
+            ImGuiContext* GImGui = NULL;
+            ImGuiContext& _context = *GImGui;
+            
+            ImVector<ImGuiWindow*> windows;
+            for (ImGuiWindow* window : _context.WindowsFocusOrder)
+                if (window->WasActive)
+                    windows.push_back(window);
+
+            // Iterate over each ImGui window and check its name
+            for (int i = 0; i < windows.size(); i++)
+            {
+                const char* name = windows[i]->Name;
+                if (strcmp(name, windowName) == 0)
+                {
+                    // This is the window we want to move to the background
+                    ImGui::SetWindowFocus(nullptr);
+                    ImVec2 pos = ImVec2(0, 0); // Set the position to the back of the z-order
+                    ImGui::SetWindowPos(name, pos);
+                }
+            }
+        }
+#endif
+
         //--
 
         //TODO:
@@ -1219,12 +1253,13 @@ void ofApp::drawImGui()
         // Open context menu/window
         // when the user right-clicks on the application window
 
-	    if (ui.isMouseOverAppWindowRightClicked())
-        {
-            ImGui::OpenPopup("my_popup"); //momentary
-        }
-	    bool b = ImGui::IsPopupOpen("my_popup");
-        if(b) drawWidgetsContextMenu2();
+        // // Popup
+        // if (ui.isMouseOverAppWindowRightClicked())
+        //    {
+        //        ImGui::OpenPopup("my_popup"); //momentary
+        //    }
+        //    bool b = ImGui::IsPopupOpen("my_popup");
+        //    if(b) drawWidgetsContextMenu2();
 
         // // Toggle
         // if (ui.isMouseOverAppWindowRightClicked())
@@ -1234,6 +1269,13 @@ void ofApp::drawImGui()
         // bool b = ImGui::IsPopupOpen("my_popup");
         // if (b) drawWidgetsContextMenu2();
         // // drawWidgetsContextMenu();
+
+        // Toggle
+        if (ui.isMouseOverAppWindowRightClicked())
+        {
+            bGui_WindowContextMenu = !bGui_WindowContextMenu;
+        }
+        if (bGui_WindowContextMenu) drawWidgetsContextMenu2();
 
         //--
 
@@ -1252,6 +1294,7 @@ void ofApp::drawImGui()
 #ifdef USE_EDITOR_INPUT
 			editorInput.drawImGui();
 #endif
+
             //--
 
             //if (ui.isMaximized() && ui.isExtraEnabled())
@@ -1290,6 +1333,7 @@ void ofApp::drawImGui()
 
         drawImGuiMain();
     }
+
     ui.End();
 }
 
@@ -1316,29 +1360,55 @@ void ofApp::drawImGuiReply(ofxSurfingGui& ui)
 */
 
 //--------------------------------------------------------------
-void ofApp::doResetWindowConversationIfFlagged()
+void ofApp::doRefreshWindowConversationIfFlagged()
 {
-    float gapy = 0;
-    float padx = 75; // x spacing to app borders
+    //TODO: this code is more related to reset window behavior. in this case it acts a refresh...
+    if (!bRefreshWindowConversation) return; //TODO: should check if will load settings when first setup
+    ofLogNotice("ofApp") << "doResetWindowConversationIfFlagged";
+
+    float padx = spacingX * ofGetWindowWidth() / 2;
+    // float padx = spacingX * bigTextInput.getWindowRectangle().getWidth() / 2;
+    // float padx = 75; //TODO: x spacing to app borders. hardcoded
+
+    float pady2 = 10; //to the top or bottom window border
 
     // y spacing between bubble text and window conversation
     // float pady = 25;
     // related to bubble height
-    float pady = spacingY * bigTextInput.getWindowRectangle().getHeight();
+    float pady1 = spacingY * bigTextInput.getWindowRectangle().getHeight();
 
-    float ho = 0;
-    ho += 2 * ImGui::GetStyle().WindowBorderSize;
-    ho += ui.getWidgetsHeightUnit();
+    // a hardcoded same that window header height
+    float pady0 = 0;
+    pady0 += 2 * ImGui::GetStyle().WindowBorderSize;
+    pady0 += ui.getWidgetsHeightUnit();
+
+    float x;
+    float y;
+    float w;
+    float h;
+
+    x = padx;
+    w = ofGetWidth() - 2 * padx;
 
     //TODO: when text input is at the top half
-    float y = bigTextInput.getWindowRectangle().getBottom() + pady + gapy + ho;
-    float w = ofGetWidth() - 2 * padx;
-    float h = ofGetHeight() - y - pady;
-    float x = padx;
+    //ratio to the top border
+    if (!bBottomTextInput) // top
+    {
+        y = bigTextInput.getWindowRectangle().getBottom() + (pady1 + pady0);
+        h = ofGetHeight() - y - pady2;
+    }
+    else // bottom
+    {
+        y = pady2 + pady0;
+        h = ofGetHeight() - (ofGetHeight() - bigTextInput.getWindowRectangle().getTop());
+        h -=pady2+ pady1 + pady0;
+    }
 
-    ImGui::SetNextWindowSize(ImVec2(w, h), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(x, y), bResetWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
-    if (bResetWindowConversation) bResetWindowConversation = 0;
+    h = ofClamp(h, 5 * ui.getWidgetsHeightUnit(), ofGetHeight() - bigTextInput.getWindowRectangle().getHeight());
+
+    ImGui::SetNextWindowSize(ImVec2(w, h), bRefreshWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(x, y), bRefreshWindowConversation ? ImGuiCond_Always : ImGuiCond_FirstUseEver);
+    if (bRefreshWindowConversation) bRefreshWindowConversation = 0;
 }
 
 //--------------------------------------------------------------
@@ -1357,7 +1427,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
     //--
 
     // Reset
-    doResetWindowConversationIfFlagged();
+    doRefreshWindowConversationIfFlagged();
 
     // scale the scrollbar size
     float scrollbarSize = ImGui::GetStyle().ScrollbarSize;
@@ -1374,6 +1444,9 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
     if (ui.BeginWindow(bGui_GptConversation, window_flags))
     {
         if (!ui.bDebug) AddHeaderHeight();
+
+        //TODO: should check interaction not focused/visible
+        // bIsInteractingWindowConversation = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
         //// Context menu
         //if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -1436,12 +1509,12 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
         ImU32 c2 = ImGui::GetColorU32(colorAssistant.get());
 
         int i = 0;
-        for (auto& m : jConversationHistory)
+        for (auto& j : jConversationHistory)
         {
-            string role = m["message"]["role"].get<std::string>();
-            string content = m["message"]["content"].get<std::string>();
+            string role = j["message"]["role"].get<std::string>();
+            string content = j["message"]["content"].get<std::string>();
 
-            bool bLast = jConversationHistory.size() - 1 == i;
+            bool bLast = (jConversationHistory.size() - 1 == i);
 
             ImU32 c = (role == "user") ? c1 : c2;
             ImGui::PushStyleColor(ImGuiCol_Text, c);
@@ -1469,14 +1542,14 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 
         //--
 
-#if(1)
+#if 1
         if (bFlagGoBottom)
         {
             bFlagGoBottom = 0;
             // Scroll to the bottom of the window
             ImGui::SetScrollHereY(1.0f);
         }
-#elif(0)
+#elif 0
 		//TODO:
 		// Tween
 		if (bFlagGoBottom)
@@ -1667,7 +1740,7 @@ void ofApp::keyPressed(int key)
     tts.keyPressed(key);
 #endif
 
-    if (0) return;
+    if (1) return;
 
     else if (key == 'g' || key == 'G') { doToggleUI(); }
 
@@ -1893,28 +1966,30 @@ void ofApp::drawWidgetsEditor()
 //--------------------------------------------------------------
 void ofApp::doSendSilentMessageToConversation(string message)
 {
-    ofLogNotice(__FUNCTION__) << message;
-    ofJson jMsg;
-    jMsg["message"]["role"] = "user";
-    jMsg["message"]["content"] = message;
+    ofLogNotice("ofApp") << message;
+    ofJson j;
+    j["message"]["role"] = "user";
+    j["message"]["content"] = message;
 
-    jConversationHistory.push_back(jMsg);
+    ofLogNotice("ofApp") << message;
+
+    jConversationHistory.push_back(j);
 }
 
 //--------------------------------------------------------------
 void ofApp::doGptSendMessage(string message)
 {
-    ofLogNotice(__FUNCTION__) << message;
+    ofLogNotice("ofApp") << message;
 
     // Clear
 
     ofxChatGPT::ErrorCode errorCode;
     bGptError = false;
 
-    ofJson jMsg;
-    jMsg["message"]["role"] = "user";
-    jMsg["message"]["content"] = message;
-    jConversationHistory.push_back(jMsg);//set to chat conversation window
+    ofJson j;
+    j["message"]["role"] = "user";
+    j["message"]["content"] = message;
+    jConversationHistory.push_back(j); //set to chat conversation window
     ofLogVerbose("ofApp") << "User: " << message;
 
     // jQuestion = jMsg;
@@ -1982,7 +2057,7 @@ void ofApp::doGptRegenerate()
 //--------------------------------------------------------------
 void ofApp::doGptDoAJoke()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     ui.AddToLog("doGptDoAJoke()", OF_LOG_WARNING);
 
     //TODO: to allow resend las original response, 
@@ -2025,7 +2100,7 @@ void ofApp::doGptDoAJoke()
 //--------------------------------------------------------------
 void ofApp::doGptDoASummarization()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     ui.AddToLog("doGptDoASummarization()", OF_LOG_WARNING);
 
     int max_words = 10;
@@ -2079,21 +2154,21 @@ void ofApp::doGptGetMessage()
         gptErrorMessage = "State: Success";
         indexErrorCode = 0;
 
-        ofJson jMsg;
-        jMsg["message"]["role"] = "assistant";
-        jMsg["message"]["content"] = strGptResponse;
+        ofJson j;
+        j["message"]["role"] = "assistant";
+        j["message"]["content"] = strGptResponse;
 
-        jConversationHistory.push_back(jMsg);
+        jConversationHistory.push_back(j);
 
         ofLogNotice("ofApp") << "Assistant: \n" << strGptResponse;
 
-        jResponse = jMsg;
+        jResponse = j;
 
         //--
 
         //TODO:
         // Process response
-        for (auto& content : jMsg["content"])
+        for (auto& content : j["content"])
         {
             strGptResponse += content.get<std::string>() + "\n";
         }
@@ -2276,7 +2351,7 @@ int ofApp::getErrorCodeByCode(ofxChatGPT::ErrorCode errorCode)
 //--------------------------------------------------------------
 void ofApp::doAttendCallbackClear()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     //TODO:
     // doClear(); // crash
@@ -2287,7 +2362,7 @@ void ofApp::doAttendCallbackClear()
 //--------------------------------------------------------------
 void ofApp::doAttendCallbackTextInput()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     //workflow
     //clear
@@ -2304,7 +2379,7 @@ void ofApp::doAttendCallbackTextInput()
 
     //// will be called when submitted text changed!
     //text = bigTextInput.getText();
-    //ofLogNotice(__FUNCTION__) << text;
+    //ofLogNotice("ofApp") << text;
     //ofSetWindowTitle(text);
 
     //ui.AddToLog("TextInput: " + textInput.get(), OF_LOG_NOTICE);
@@ -2322,7 +2397,7 @@ void ofApp::doAttendCallbackTextInput()
 //--------------------------------------------------------------
 void ofApp::doGptRestart()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     sounds.play(5);
 
     setupGpt();
@@ -2336,7 +2411,7 @@ void ofApp::doGptRestart()
 //--------------------------------------------------------------
 bool ofApp::doGptResetEndpointIP()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     sounds.play(5);
 
     CURL* curl;
@@ -2394,7 +2469,7 @@ bool ofApp::doGptResetEndpointIP()
 //--------------------------------------------------------------
 void ofApp::doResetAll(bool bSilent)
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     if (!bSilent) sounds.play(5);
 
     doClear();
@@ -2408,7 +2483,7 @@ void ofApp::doResetAll(bool bSilent)
     sizeFontConv = 2;
     bLastBlink = 1;
     bLastBigger = 0;
-    doResetWindowConversation();
+    doRefreshWindowConversation();
 
     //colorBg = ofColor(39);
     //colorAccent = ofColor(85, 0, 185);
@@ -2422,7 +2497,7 @@ void ofApp::doResetAll(bool bSilent)
 //--------------------------------------------------------------
 void ofApp::doClearAll()
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
 
     bWaitingGpt = 0;
 
@@ -2433,7 +2508,7 @@ void ofApp::doClearAll()
 //--------------------------------------------------------------
 void ofApp::doClear(bool bSilent)
 {
-    ofLogNotice(__FUNCTION__);
+    ofLogNotice("ofApp");
     if (!bSilent) sounds.play(4);
 
     ui.AddToLog("Clear", OF_LOG_WARNING);
@@ -2496,6 +2571,9 @@ void ofApp::drawWidgetsToTextInput()
 //--------------------------------------------------------------
 void ofApp::drawWidgetsContextMenu2()
 {
+    // ShowExampleAppSimpleOverlay(NULL);
+    // return;
+
     // Bg
     ImVec4 bgCol = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
     ImGui::PushStyleColor(ImGuiCol_PopupBg, bgCol);
@@ -2511,8 +2589,8 @@ void ofApp::drawWidgetsContextMenu2()
 
         ui.AddSpacing();
 
-        static bool big_font=0;
-        if(big_font) ui.PushFont(SurfingFontTypes(1));
+        static bool big_font = 0;
+        if (big_font) ui.PushFont(SurfingFontTypes(1));
 
         {
             ofxImGuiSurfing::AddMatrixClickerLabelsStrings(indexPrompt, promptsNames, true, promptsNames.size());
@@ -2535,8 +2613,8 @@ void ofApp::drawWidgetsContextMenu2()
             //ui.AddSpacingSeparated();
             //ui.Add(bGui, OFX_IM_TOGGLE_ROUNDED);
         }
-        
-        if(big_font) ui.PopFont();
+
+        if (big_font) ui.PopFont();
 
         ui.AddSpacing();
         //ui.AddSpacingSeparated();
@@ -2549,7 +2627,7 @@ void ofApp::drawWidgetsContextMenu2()
 }
 
 //--------------------------------------------------------------
-void ofApp::drawWidgetsContextMenu()
+void ofApp::drawWidgetsContextMenu1()
 {
     //ui.AddButton("A");
 
@@ -2562,6 +2640,7 @@ void ofApp::drawWidgetsContextMenu()
         float y = 0;
         float w = 200;
         float h = 0;
+
         //ImGui::SetNextWindowSizeConstraints(ImVec2(140, 0), ImVec2(w, 0));
         ImGui::SetNextWindowSize(ImVec2(w, h));
         // ImGui::SetNextWindowPos(ImVec2(x, y));
@@ -2683,5 +2762,52 @@ void ofApp::windowResized(ofResizeEventArgs& resize)
     if (!b) return; // skip if not changed
 
     ofLogVerbose("ofApp::windowResized") << resize.width << "," << resize.height;
-    doResetWindowConversation();
+    doRefreshWindowConversation();
 }
+
+//--------------------------------------------------------------
+void ofApp::doRefreshWindowConversation()
+{
+    ofLogNotice("ofApp") << "doRefreshWindowConversation";
+    bRefreshWindowConversation = 1;
+}
+
+//--------------------------------------------------------------
+void ofApp::doResetWindowConversation()
+{
+    ofLogNotice("ofApp") << "doResetWindowConversation";
+    spacingX = 0.2;
+    spacingY = 0.2;
+    bigTextInput.windowPadX = 0.2;
+    bigTextInput.windowY = 0.05;
+}
+
+//#ifdef USE_OFX_ELEVEN_LABS
+//	static auto drawElevenLabsExtras = [this]() {
+//		ui.AddSpacing();
+//		if (ui.AddButton("Reset##tts", OFX_IM_BUTTON)) {
+//			tts.doReset();
+//		}
+//		ui.AddTooltip("Reset settings");
+//
+//		if (ui.AddButton("Replay##tts", OFX_IM_BUTTON, 2, 1)) {
+//			tts.doReplayAudio();
+//		}
+//		ui.AddTooltip("Replay last audio");
+//
+//		if (ui.AddButton("Resend##tts", OFX_IM_BUTTON, 2)) {
+//			tts.doResend();
+//		}
+//		ui.AddTooltip("Resend last text");
+//
+//		if (ui.AddButton("Cancel##tts", OFX_IM_BUTTON, 2, 1)) {
+//			tts.doCancelRequest();
+//		}
+//		ui.AddTooltip("Force stop request");
+//
+//		if (ui.AddButton("Restart##tts", OFX_IM_BUTTON, 2)) {
+//			tts.doRestart();
+//		}
+//		ui.AddTooltip("Restart connection");
+//		};
+//#endif
