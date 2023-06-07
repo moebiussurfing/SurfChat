@@ -4,11 +4,16 @@
 
 	TODO
 
-    fix z-order sort windows behavior.
+	fix z-order sort windows behavior.
 
-    catch reg/numbers like 1. 2. and convert to buttons
-        to click and re submit as a new request
-        
+	click for set-this-as-topic. to reply other aspects around that
+
+	add easy open-url context menu
+		youtube, instagram , google
+
+	catch reg/numbers like 1. 2. and convert to buttons
+		to click and re submit as a new request
+
 	make a class for main gpt methods
 
 	fix threads for tts/ learn with color quatizer
@@ -28,12 +33,12 @@
 		make new class SurfGPT.
 		model and error/state
 
-    Subtitles
+	Subtitles
 	fix < > slides
 		fix 1st/end slide.
 
 	add dual window 1: gui / 2: out
-	
+
 	add prompts manager:
 		save on json file.
 		create prompt struct
@@ -98,312 +103,314 @@ using callback_t = std::function<void()>;
 class ofApp : public ofBaseApp
 {
 public:
-    void setup();
-    void update();
-    void draw();
-    void exit();
-    void keyPressed(int key);
+	void setup();
+	void setupImGui();
+	void update();
+	void draw();
+	void exit();
+	void keyPressed(int key);
 
-    void setupParams();
-    void setupInputText();
-    void startup();
-    void startupDelayed();
-    void drawBg();
+	void setupParams();
+	void setupInputText();
+	void startup();
+	void startupDelayed();
+	void drawBg();
 
-    ofxSurfingGui ui;
+	ofxSurfingGui ui;
 
-    ofParameter<bool> bGui;
-    ofParameterGroup params{"surfChat"};
-    void Changed_Params(ofAbstractParameter& e);
+	ofParameter<bool> bGui;
+	ofParameterGroup params{ "surfChat" };
+	void Changed_Params(ofAbstractParameter& e);
 
-    void drawImGui();
-    void drawImGuiMain();
-    bool bIsOver_GuiMain = 0;
-    void drawImGuiGpt2();
-    void drawImGuiGpt1();
-    void drawImGuiConversation(ofxSurfingGui& ui);
-    bool bIsInteractingWindowConversation = 0;
-    bool bRefreshWindowsLayout = 0;
-    void doRefreshWindowConversationIfFlagged();
+	void drawImGui();
+	void drawImGuiMain();
+	bool bIsOver_GuiMain = 0;
+	void drawImGuiGpt2();
+	void drawImGuiGpt1();
+	void drawImGuiConversation(ofxSurfingGui& ui);
+	bool bIsInteractingWindowConversation = 0;
+	bool bRefreshWindowsLayout = 0;
+	void doRefreshWindowConversationIfFlagged();
 
-    bool bFlagGoBottom = 0;
-    bool bFlagGoTop = 0;
-    //TODO: centralize commands. same approach
-    // use home/end keys for top/bottom full
-    bool bFlagGoBottomStp = 0;
-    bool bFlagGoTopStp = 0;
-    bool bFlagGoBottomPage = 0;
-    bool bFlagGoTopPage = 0;
+	bool bFlagGoBottom = 0;
+	bool bFlagGoTop = 0;
+	//TODO: centralize commands. same approach
+	// use home/end keys for top/bottom full
+	bool bFlagGoBottomStp = 0;
+	bool bFlagGoTopStp = 0;
+	bool bFlagGoBottomPage = 0;
+	bool bFlagGoTopPage = 0;
 
-    //--
+	//--
 
-    string textLastResponse;
-    ofJson jResponse;
+	string textLastResponse;
+	ofJson jResponse;
 
-    string textLastTrick; // tricks could be jokes or summarize spceial commands.
-    bool bLastWasATrick = 0;
+	string textLastTrick; // tricks could be jokes or summarize spceial commands.
+	bool bLastWasATrick = 0;
 
-    vector<string> textHistory;
-    int i_hist = 0;
+	vector<string> textHistory;
+	int i_hist = 0;
 
-    //--
+	//--
 
-    // Send text to conversation
-    // Not sent to gpt just to chat window to notify some commands to the user
-    void doSendSilentMessageToConversation(string message);
+	// Send text to conversation
+	// Not sent to gpt just to chat window to notify some commands to the user
+	void doSendSilentMessageToConversation(string message);
 
-    ChatThread chatGpt;
-    void doGptRestart();
-    void setupGpt(bool bSilent = 0);
-    string pathGptSettings = "GptChat_ConfigKey.json";
-    void doGptSendMessage(string message);
-    void doGptRegenerate();
-    void doGptResend();
-    void doGptGetMessage();
-    ofParameter<bool> bWaitingGpt{"GPT WAITING", 0};
-    // Error codes for various error conditions.
-    vector<string> errorCodesNames{
-        "Success", //0
-        "InvalidAPIKey",
-        "NetworkError",
-        "ServerError",
-        "RateLimitExceeded",
-        "TokenLimitExceeded",
-        "InvalidModel",
-        "BadRequest",
-        "Timeout", //8
-        "UnknownError"
-    };
-    ofParameter<int> indexErrorCode{"State", 9, 0, errorCodesNames.size() - 1};
-    bool bGptError = false;
-    int getErrorCodeByCode(ofxChatGPT::ErrorCode e);
-    string gptErrorMessage = "";
+	ChatThread chatGpt;
+	void doGptRestart();
+	void setupGpt(bool bSilent = 0);
+	string pathGptSettings = "GptChat_ConfigKey.json";
+	void doGptSendMessage(string message);
+	void doGptRegenerate();
+	void doGptResend();
+	void doGptGetMessage();
+	ofParameter<bool> bWaitingGpt{"GPT WAITING", 0};
+	// Error codes for various error conditions.
+	vector<string> errorCodesNames{
+		"Success", //0
+			"InvalidAPIKey",
+			"NetworkError",
+			"ServerError",
+			"RateLimitExceeded",
+			"TokenLimitExceeded",
+			"InvalidModel",
+			"BadRequest",
+			"Timeout", //8
+			"UnknownError"
+	};
+	ofParameter<int> indexErrorCode{"State", 9, 0, errorCodesNames.size() - 1};
+	bool bGptError = false;
+	int getErrorCodeByCode(ofxChatGPT::ErrorCode e);
+	string gptErrorMessage = "";
 
-    vector<string> modelsNames;
-    ofParameter<int> indexModel{"IndexModel", 0, 0, 0};
+	vector<string> modelsNames;
+	ofParameter<int> indexModel{"IndexModel", 0, 0, 0};
 
-    // The used server sometimes requires some IP reseting.
-    bool doGptResetEndpointIP();
+	// The used server sometimes requires some IP reseting.
+	bool doGptResetEndpointIP();
 
-    ofParameter<string> apiKey{"API key", ""};
-    ofParameter<string> model{"Model", ""};
-    ofParameter<bool> bModeConversation{"Conversation", false};
+	ofParameter<string> apiKey{"API key", ""};
+	ofParameter<string> model{"Model", ""};
+	ofParameter<bool> bModeConversation{"Conversation", false};
 
-    ofParameterGroup paramsConversations{"Conversations"};
-    ofJson jConversationHistory = ofJson();
-    ofParameter<bool> bGui_GptConversation{"GPT Conversation", false};
-    ofParameter<int> sizeFontConv{"SizeFontConv", 0, 0, 3};
-    ofParameter<bool> bLastBigger{"LastBigger", false};
-    ofParameter<bool> bLastBlink{"LastBlink", false};
+	ofParameterGroup paramsConversations{ "Conversations" };
+	ofJson jConversationHistory = ofJson();
+	ofParameter<bool> bGui_GptConversation{"GPT Conversation", false};
+	ofParameter<int> sizeFontConv{"SizeFontConv", 0, 0, 3};
+	ofParameter<bool> bLastBigger{"LastBigger", false};
+	ofParameter<bool> bLastBlink{"LastBlink", false};
 
-    ofParameter<bool> bModeOneSlide{"OneSlide", false}; // for subtitles module
-    ofParameter<bool> bLock{"Lock", false};
+	ofParameter<bool> bModeOneSlide{"OneSlide", false}; // for subtitles module
+	ofParameter<bool> bLock{"Lock", false};
 
-    void doGptDoAJoke(); // do a joke related to last text
-    void doGptDoASummarization(); // summarize last text in 6 words
+	void doGptDoContinue(); // more
+	void doGptDoAJoke(); // do a joke related to last text
+	void doGptDoASummarization(); // summarize last text in 6 words
 
-    //--
+	//--
 
-    // Text input bubble
-    BigTextInput bigTextInput;
-    void doAttendCallbackTextInput();
-    void doAttendCallbackClear();
-    void doAttendCallbackKeys();
-    ofEventListener eTextInput;
-    ofParameter<string> textInput{"TextInput", ""};
-    ofParameter<float> spacingY{"SpacingY", 0, 0, 1};
-    ofParameter<float> spacingX{"SpacingX", 0, 0, 1};
-    ofParameter<bool> bBottomTextInput{"Bottom", false};
-    ofParameter<bool> bGui_WindowContextMenu;
-    void drawWidgetsToTextInput();
-    // void drawWidgetsContextMenu1();
-    void drawWidgetsContextMenu2();
-    void drawWidgetsContextWidgets();
-    int locationWindowContext = -1;
+	// Text input bubble
+	BigTextInput bigTextInput;
+	void doAttendCallbackTextInput();
+	void doAttendCallbackClear();
+	void doAttendCallbackKeys();
+	ofEventListener eTextInput;
+	ofParameter<string> textInput{"TextInput", ""};
+	ofParameter<float> spacingY{"SpacingY", 0, 0, 1};
+	ofParameter<float> spacingX{"SpacingX", 0, 0, 1};
+	ofParameter<bool> bBottomTextInput{"Bottom", false};
+	ofParameter<bool> bGui_WindowContextMenu;
+	void drawWidgetsToTextInput();
+	// void drawWidgetsContextMenu1();
+	void drawWidgetsContextMenu2();
+	void drawWidgetsContextWidgets();
+	int locationWindowContext = -1;
 
-    //--
+	//--
 
-    // Text Editors
+	// Text Editors
 #ifdef USE_EDITOR_INPUT
 	SurfingTextEditor editorInput;
 #endif
 #ifdef USE_EDITOR_RESPONSE
-    SurfingTextEditor editorLastResponse;
+	SurfingTextEditor editorLastResponse;
 #endif
 
 #ifdef USE_EDITOR_INPUT
 	void drawWidgetsEditor(); // Advanced: inserted widgets
 #endif
 
-    //--
+	//--
 
-    void doClear(bool bSilent = 0);
-    void doClearAll();
+	void doClear(bool bSilent = 0);
+	void doClearAll();
 
-    //--
+	//--
 
-    // Prompts and Roles
-    void setupGptPrompts();
-    void doRefreshGptPrompts();
-    void doGptSetPrompt(int index);
-    void doSwapGptPrompt(); //next
-    ofParameterGroup paramsPrompts{"Prompts"};
-    string strPrompt;
-    ofParameter<int> indexPrompt{"IndexPrompt", 0, 0, 0};
-    string promptName;
-    vector<string> promptsNames;
-    vector<string> promptsContents;
-    ofParameter<int> amountResultsPrompt{"Results", 10, 1, 100};
-    vector<string> tagsNames{
-        "Music Band", "Book Writer", "Film Director", "Film Actor", "Film Title", "Illustrator", "Painter",
-        "Philosopher"
-    };
-    ofParameter<int> indexTags{"IndexTag", 0, 0, tagsNames.size() - 1};
-    string tagWord = "-1";
+	// Prompts and Roles
+	void setupGptPrompts();
+	void doRefreshGptPrompts();
+	void doGptSetPrompt(int index);
+	void doSwapGptPrompt(); //next
+	ofParameterGroup paramsPrompts{ "Prompts" };
+	string strPrompt;
+	ofParameter<int> indexPrompt{"IndexPrompt", 0, 0, 0};
+	string promptName;
+	vector<string> promptsNames;
+	vector<string> promptsContents;
+	ofParameter<int> amountResultsPrompt{"Results", 10, 1, 100};
+	vector<string> tagsNames{
+		"Music Band", "Book Writer", "Film Director", "Film Actor", "Film Title", "Illustrator", "Painter",
+			"Philosopher"
+	};
+	ofParameter<int> indexTags{"IndexTag", 0, 0, tagsNames.size() - 1};
+	string tagWord = "-1";
 
-    // Default replies sizes
-    vector<string> sizeNames{"Small", "Medium", "Long", "Unlimited"};
-    ofParameter<int> indexSize{"IndexSize", 0, 0, sizeNames.size() - 1};
-    string strSizes = "";
+	// Default replies sizes
+	vector<string> sizeNames{"Short", "Medium", "Long", "Unlimited"};
+	ofParameter<int> indexSize{"IndexSize", 0, 0, sizeNames.size() - 1};
+	string strSizes = "";
 
-    //--
+	//--
 
-    // Roles (system prompts)
+	// Roles (system prompts)
 
-    // Add final point and avoid empty lines
-    string sFormat()
-    {
-        string s3 = "";
-        s3 += "In the case that the lines do not end with a '.', add a '.' at the end of each line.\n";
-        s3 += "Remove any break lines that create empty text lines.\n";
-        
-        return s3;
-    }
+	// Add final point and avoid empty lines
+	string sFormat()
+	{
+		string s3 = "";
+		s3 += "In the case that the lines do not end with a '.', add a '.' at the end of each line.\n";
+		s3 += "Remove any break lines that create empty text lines.\n";
 
-    // Limit amount of words
-    string sLimit()
-    {
-        if (indexSize == 3) return string("\nMake your reply long."); // unlimited returns an empty string
+		return s3;
+	}
 
-        string s = "\nLimit the long of your reply to a maximum of ";
-        switch (indexSize.get())
-        {
-        case 0: s += ofToString(7) + " words."; break;
-        case 1: s += ofToString(30) + " words."; break;
-        case 2: s += ofToString(50) + " words."; break;
-        }
-        s += " words.";
+	// Limit amount of words
+	string sLimit()
+	{
+		if (indexSize == 3) return string("\nMake your reply as long as you can."); // unlimited returns an empty string
 
-        return s;
-    }
+		string s = "\nLimit the long of your reply to a maximum of ";
+		switch (indexSize.get())
+		{
+		case 0: s += ofToString(7) + " words."; break;
+		case 1: s += ofToString(30) + " words."; break;
+		case 2: s += ofToString(50) + " words."; break;
+		}
+		s += " words.";
 
-    // Default
-    string doCreateGptRolePromptDefault()
-    {
-        string s = "Act as your default ChatGPT behavior \nfollowing the conversation.";
+		return s;
+	}
 
-        s += sLimit();
+	// Default
+	string doCreateGptRolePromptDefault()
+	{
+		string s = "Act as your default ChatGPT behavior \nfollowing the conversation.";
 
-        return string(s);
-    }
+		s += sLimit();
 
-    // Words
-    string doCreateGptRolePromptWords()
-    {
-        string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
-        s0 += "I will pass you a " + tagWord + " name.";
-        string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
-        string s2 =
-            "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
-        s2 +=
-            "The format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \n";
-        //s2 += "and without a '.' at the end of the line, just include the break line char.";
-        s2 += "start each line with a number and a '.' starting at '1.'";
-        
-        return string(s0 + s1 + s2);
-    }
+		return string(s);
+	}
 
-    // Sentences
-    int max_words = 7;
+	// Words
+	string doCreateGptRolePromptWords()
+	{
+		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
+		s0 += "I will pass you a " + tagWord + " name.\n";
+		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " words.\n";
+		string s2 =
+			"You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
+		s2 +=
+			"The format of the response, will be with one line per each word. \nThese lines will be starting with the first char uppercased, \n";
+		//s2 += "and without a '.' at the end of the line, just include the break line char.";
+		s2 += "start each line with a number and a '.' starting at '1.'";
 
-    string doCreateGptRolePromptSentences()
-    {
-        string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
-        string s1 = "You will create a campaign to promote that " + tagWord + "\n";
-        s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
-        s1 += "These sentences must define " + tagWord +
-            "'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
-        string s2 = "The sentences will be short: less than " + ofToString(max_words) + " words each sentence.";
-        s2 += sFormat();
-        
-        return string(s0 + s1 + s2);
-    }
+		return string(s0 + s1 + s2);
+	}
 
-    // Other Similar
-    string doCreateGptRolePromptSimilar()
-    {
-        string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
-        s0 += "I will pass you a " + tagWord + " name. ";
-        string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " names of similar " +
-            tagWord + "s creators.\n";
-        string s2 =
-            "You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
-        s2 += "About the format of the response: will be with one line per each word.\n";
-        s2 += "These lines will be starting with the first char uppercased, \n";
-        //s2 += "and without a '.' at the end of the line, just include the break line char.";
-        s2 += "start each line with a number and a '.' starting at '1.'\n";
-        s2 += sFormat();
-        
-        return string(s0 + s1 + s2);
-    }
+	// Sentences
+	int max_words = 7;
 
-    //--
+	string doCreateGptRolePromptSentences()
+	{
+		string s0 = "From now on, I want you to act as a " + tagWord + " advertiser.\n";
+		string s1 = "You will create a campaign to promote that " + tagWord + "\n";
+		s1 += "That campaign consists of " + ofToString(amountResultsPrompt.get()) + " short sentences.\n";
+		s1 += "These sentences must define " + tagWord +
+			"'s career highlights, \nthe best edited releases or the more important  members in case the authors worked in collaboration of many members or as collective.\n";
+		string s2 = "The sentences will be short: less than " + ofToString(max_words) + " words each sentence.";
+		s2 += sFormat();
 
-    SurfingSounds sounds;
+		return string(s0 + s1 + s2);
+	}
 
-    // Bg flash. set to 1 to start.
-    float v = 0;
+	// Other Similar
+	string doCreateGptRolePromptSimilar()
+	{
+		string s0 = "From now on, I want you to act as a " + tagWord + " critic.\n";
+		s0 += "I will pass you a " + tagWord + " name. ";
+		string s1 = "You will return a list of " + ofToString(amountResultsPrompt.get()) + " names of similar " +
+			tagWord + "s creators.\n";
+		string s2 =
+			"You will only reply with that words list, and nothing else, no explanations. \nWords will be sorted starting from less to more relevance. \n";
+		s2 += "About the format of the response: will be with one line per each word.\n";
+		s2 += "These lines will be starting with the first char uppercased, \n";
+		//s2 += "and without a '.' at the end of the line, just include the break line char.";
+		s2 += "start each line with a number and a '.' starting at '1.'\n";
+		s2 += sFormat();
 
-    ofParameter<int> typeSpin{"typeSpin", 0, 0, 0};
+		return string(s0 + s1 + s2);
+	}
 
-    //--
+	//--
+
+	SurfingSounds sounds;
+
+	// Bg flash. set to 1 to start.
+	float v = 0;
+
+	ofParameter<int> typeSpin{"typeSpin", 0, 0, 0};
+
+	//--
 
 #ifdef USE_OFX_ELEVEN_LABS
-    ofxElevenLabs tts;
-    void drawImGuiElebenLabs1();
-    void drawImGuiElebenLabs2();
-    void drawImGuiElebenLabsExtras();
+	ofxElevenLabs tts;
+	void drawImGuiElebenLabs1();
+	void drawImGuiElebenLabs2();
+	void drawImGuiElebenLabsExtras();
 #endif
 
-    //--
+	//--
 
-    ofParameter<ofColor> colorBg{"ColorBg", ofColor::grey, ofColor(), ofColor()};
-    ofParameter<ofColor> colorAccent{"ColorBubbleAccent", ofColor::grey, ofColor(), ofColor()};
-    ofParameter<ofColor> colorUser{"ColorTxtUser", ofColor::grey, ofColor(), ofColor()};
-    ofParameter<ofColor> colorAssistant{"ColorTxtAssistant", ofColor::grey, ofColor(), ofColor()};
+	ofParameter<ofColor> colorBg{"ColorBg", ofColor::grey, ofColor(), ofColor()};
+	ofParameter<ofColor> colorAccent{"ColorBubbleAccent", ofColor::grey, ofColor(), ofColor()};
+	ofParameter<ofColor> colorUser{"ColorTxtUser", ofColor::grey, ofColor(), ofColor()};
+	ofParameter<ofColor> colorAssistant{"ColorTxtAssistant", ofColor::grey, ofColor(), ofColor()};
 
-    // Tester
-    string strBandname;
-    void doRandomInput();
+	// Tester
+	string strBandname;
+	void doRandomInput();
 
-    bool bDoneStartup = 0;
-    bool bDoneStartupDelayed = 0;
+	bool bDoneStartup = 0;
+	bool bDoneStartupDelayed = 0;
 
-    void doResetAll(bool bSilent = 0);
+	void doResetAll(bool bSilent = 0);
 
-    ofxWindowApp w;
-    ofxAutosaveGroupTimer g;
+	ofxWindowApp w;
+	ofxAutosaveGroupTimer g;
 
-    void windowResized(ofResizeEventArgs& resize);
+	void windowResized(ofResizeEventArgs& resize);
 
-    void doRefreshWindowsLayout();
-    void doResetWindowsLayout();
+	void doRefreshWindowsLayout();
+	void doResetWindowsLayout();
 
-    //--
+	//--
 
 #ifdef USE_PRESETS
-    ofxSurfingPresetsLite presets;
-    ofParameterGroup paramsPreset;
+	ofxSurfingPresetsLite presets;
+	ofParameterGroup paramsPreset;
 #endif
 
 #ifdef USE_SURF_SUBTITLES
@@ -419,4 +426,11 @@ public:
 	void doUpdatedWhisper();
 	void drawImGuiWidgetsWhisper();
 #endif
+
+	ofParameter<int> sizeFont{ "sizeFont", 30, 5, 50 };
+	ofParameter<bool> bScaleWindow{"Scale Window", false};
+	ofParameter<float> scaleWindow{"Scale", 0., -1.f, 1.f};
+
+	bool bBuild = 0;
+	bool bLoadFolder = 0;
 };
