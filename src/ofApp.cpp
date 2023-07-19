@@ -52,16 +52,36 @@ void ofApp::setupImGui()
 	ui.setLogLevel(OF_LOG_VERBOSE);
 	ui.setDisableStartupResetLayout();
 	ui.setup();
+	
+	string p;
+	string s;
+
+	/*
+	p = "assets/fonts2/Montserrat-Bold.ttf";
+	ui.setDefaultFont(p, 14);
+	*/
+
 
 	// Customize Default font with the 4 styles
 	// string p = "assets/fonts2/Inter-Bold.ttf";
 	//string p = "assets/fonts2/Poppins-Regular.ttf";
 	//string p = "assets/fonts2/Gilmer Medium.otf";
-	string p = "assets/fonts2/Montserrat-Bold.ttf";
-	ui.setDefaultFont(p, 14);
+	//string p = "assets/fonts2/Montserrat-Bold.ttf";
+	//float sz = 14;
+	float sz = 15;
+	p = "assets/fonts2/NotoSans-Regular.ttf";
+	ui.setupFontForDefaultStyles(p, sz);
 
-	string s = "assets/fonts2";
+	//p = "assets/fonts/JetBrainsMono-ExtraBold.ttf";
+	//ui.setupFontForDefaultStyles(p, sizeFont);
+	p = "assets/fonts2/NotoSansMono-Regular.ttf";
+	ui.setupFontForDefaultStyles(p, sz);
+	
+	/*
+	s = "assets/fonts2";
 	ui.pushFontsFromFolder(s, sizeFont);
+	*/
+	//ui.bLoadFontsFromFolder
 }
 
 //--------------------------------------------------------------
@@ -489,7 +509,7 @@ void ofApp::Changed_Params(ofAbstractParameter& e)
 			subs.bGui_List = 0;
 			subs.bGui_Paragraph = 0;
 #endif
-		}
+}
 	}
 
 	//--
@@ -606,7 +626,7 @@ void ofApp::update()
 	//--
 
 	ofSoundUpdate();
-}
+	}
 
 //--------------------------------------------------------------
 void ofApp::drawBg()
@@ -648,8 +668,8 @@ void ofApp::drawBg()
 #else
 			ofClear(colorBg.get());
 #endif
-		}
 	}
+}
 }
 
 //--------------------------------------------------------------
@@ -745,9 +765,9 @@ void ofApp::drawImGuiElebenLabs1()
 				tts.doSend(textLastResponse);
 			}
 			s = tts.getText();
-			ui.PushFont(SurfingFontTypes(1));
+			ui.PushFontStyle(SurfingFontTypes(1));
 			ui.AddTooltip(s);
-			ui.PopFont();
+			ui.PopFontStyle();
 
 			if (ui.AddButton("Cancel", OFX_IM_BUTTON, 2))
 			{
@@ -831,8 +851,11 @@ void ofApp::drawImGuiGpt1()
 				ui.AddSpacing();
 				ui.AddLabelBig("API KEY");
 				ui.Add(apiKey, OFX_IM_TEXT_INPUT_NO_NAME);
-				ui.AddLabelBig("MODEL");
+				ui.AddLabelBig("Endpoint");
+				string s = chatGpt.getEndPoint();
+				ui.AddLabel(s);
 
+				ui.AddLabelBig("MODEL");
 				//ui.Add(model, OFX_IM_TEXT_DISPLAY);
 				//ui.AddLabel(model.get());
 				ui.AddCombo(indexModel, modelsNames);
@@ -851,14 +874,14 @@ void ofApp::drawImGuiGpt1()
 		ui.AddSpacingSeparated();
 
 #ifdef USE_EDITOR_INPUT
-		//ui.PushFont(OFX_IM_FONT_BIG);
+		//ui.PushFontStyle(OFX_IM_FONT_BIG);
 		{
 			if (ui.AddButton("Send"))
 			{
 				doGptSendMessage(editorInput.getText(), bModeConversation);
 			}
 		}
-		//ui.PopFont();
+		//ui.PopFontStyle();
 #endif
 
 		// ui.AddLabelBig("Prompt");
@@ -872,9 +895,9 @@ void ofApp::drawImGuiGpt1()
 		{
 			ui.AddSpacing();
 			ui.AddCombo(indexPrompt, promptsNames);
-			ui.PushFont(SurfingFontTypes(1));
+			ui.PushFontStyle(SurfingFontTypes(1));
 			ui.AddTooltip(strPrompt);
-			ui.PopFont();
+			ui.PopFontStyle();
 			if (indexPrompt != 0)
 			{
 				ui.AddCombo(indexTags, tagsNames);
@@ -982,8 +1005,8 @@ void ofApp::drawImGuiGpt2()
 		ui.AddLabel(s);
 		ui.AddTooltip(strPrompt);
 		ui.AddCombo(indexPrompt, promptsNames);
-		// ui.PushFont(SurfingFontTypes(1));
-		// ui.PopFont();
+		// ui.PushFontStyle(SurfingFontTypes(1));
+		// ui.PopFontStyle();
 		if (indexPrompt != 0)
 		{
 			ui.AddCombo(indexTags, tagsNames);
@@ -1087,10 +1110,10 @@ void ofApp::drawImGuiMain()
 
 		string s;
 
-		ui.PushFont(SurfingFontTypes(1));
+		ui.PushFontStyle(SurfingFontTypes(1));
 		ui.Add(ui.bGui_GameMode, OFX_IM_TOGGLE_BIG_BORDER_BLINK);
-		ui.PopFont();
-		
+		ui.PopFontStyle();
+
 		ui.AddSpacing();
 		ui.AddMinimizerToggle();
 
@@ -1224,7 +1247,7 @@ void ofApp::drawImGuiMain()
 					//ui.AddLabelBig("Tester", false, true);
 					static bool bTester = 0;
 					ImGui::Checkbox("Tester##2", &bTester);
-					//ui.PushFont(OFX_IM_FONT_BIG);
+					//ui.PushFontStyle(OFX_IM_FONT_BIG);
 					{
 						if (bTester) {
 							s = "Random\nText!";
@@ -1247,7 +1270,7 @@ void ofApp::drawImGuiMain()
 							}
 						}
 					}
-					//ui.PopFont();
+					//ui.PopFontStyle();
 				}
 			}
 			/*
@@ -1319,8 +1342,8 @@ void ofApp::drawImGui()
 					ImGui::SetWindowFocus(nullptr);
 					ImVec2 pos = ImVec2(0, 0); // Set the position to the back of the z-order
 					ImGui::SetWindowPos(name, pos);
-				}
-			}
+	}
+}
 		}
 #endif
 
@@ -1427,13 +1450,13 @@ void ofApp::drawImGuiReply(ofxSurfingGui& ui)
 	{
 		if (ui.isDebug()) ui.AddComboFontsSelector(fontR);
 
-		ui.PushFont(SurfingFontTypes(fontR.get()));
+		ui.PushFontStyle(SurfingFontTypes(fontR.get()));
 
 		string s = textLastResponse;
 
 		ImGui::TextWrapped(s.c_str());
 
-		ui.PopFont();
+		ui.PopFontStyle();
 
 		ui.EndWindow();
 	}
@@ -1591,7 +1614,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 
 #if 0
 		//if (ui.isDebug()) ui.AddComboFontsSelector(sizeFontConv);
-		ui.PushFont(SurfingFontTypes(sizeFontConv.get()));
+		ui.PushFontStyle(SurfingFontTypes(sizeFontConv.get()));
 #endif
 		// Colorized by roles
 
@@ -1650,8 +1673,8 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 				{
 					// ui.AddLabelLinkURL();
 					// ui.AddLinkUrlButton();
-				}
-			}
+		}
+	}
 #endif
 			if (bLast)
 			{
@@ -1661,9 +1684,9 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 			ImGui::PopStyleColor();
 
 			i++;
-		}
+}
 #if 0
-		ui.PopFont();
+		ui.PopFontStyle();
 #endif
 
 		//--
@@ -1768,7 +1791,7 @@ void ofApp::drawImGuiConversation(ofxSurfingGui& ui)
 		ui.PopFontByIndex();
 
 		ui.EndWindow();
-	}
+		}
 
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -1831,8 +1854,8 @@ void ofApp::keyPressed(int key)
 	ofLogNotice("ofApp") << "keyPressed:" << char(key);
 
 	//TODO:
-	//if (ui.isOverInputText())
-	if (bigTextInput.isOverInputText())
+	//if (ui.isMouseOverInputText())
+	if (bigTextInput.isMouseOverInputText())
 	{
 		doAttendCallbackKeys();
 	}
@@ -1862,7 +1885,7 @@ void ofApp::keyPressed(int key)
 
 	//----
 
-	if (ui.isOverInputText()) return; // skip when editing
+	if (ui.isMouseOverInputText()) return; // skip when editing
 	if (chatGpt.isWaiting()) return;
 
 #ifdef USE_OFX_ELEVEN_LABS
@@ -2089,7 +2112,7 @@ void ofApp::drawWidgetsEditor()
 		ui.AddToLog(s, OF_LOG_NOTICE);
 		doGptSendMessage(s, bModeConversation);
 		editorInput.clearText();
-	}
+}
 }
 #endif
 
@@ -2793,7 +2816,7 @@ void ofApp::drawWidgetsContextMenu2()
 		// is on top of the z-order blocking other windows.
 		if (1)
 		{
-			if (ofGetFrameNum() % 120 == 0 && !bigTextInput.isOverInputText() && !bIsOver_GuiMain)
+			if (ofGetFrameNum() % 120 == 0 && !bigTextInput.isMouseOverInputText() && !bIsOver_GuiMain)
 			{
 				ui.setWindowFocused(bGui_WindowContextMenu);
 			}
@@ -2814,7 +2837,7 @@ void ofApp::drawWidgetsContextMenu2()
 // {
 //     //ui.AddButton("A");
 //
-//     //ui.PushFont(SurfingFontTypes(1));
+//     //ui.PushFontStyle(SurfingFontTypes(1));
 //
 //     if (ImGui::BeginPopup("my_popup"))
 //     {
@@ -2860,7 +2883,7 @@ void ofApp::drawWidgetsContextMenu2()
 //         ImGui::EndPopup();
 //     }
 //
-//     //ui.PopFont();
+//     //ui.PopFontStyle();
 // }
 
 //--
@@ -3015,7 +3038,7 @@ void ofApp::drawWidgetsContextWidgets()
 			doGptDoASummarization();
 		}
 	}
-	if (big_font) ui.PopFont();
+	if (big_font) ui.PopFontStyle();
 
 	ui.AddSpacingBig();
 
@@ -3041,7 +3064,7 @@ void ofApp::drawWidgetsContextWidgets()
 #endif
 		//ui.AddThemeToggle();
 
-		static auto drawStyledText= [this]()
+		static auto drawStyledText = [this]()
 		{
 			ui.PushFontByIndex();
 			{
@@ -3148,9 +3171,9 @@ void ofApp::drawWidgetsContextWidgets()
 		{
 			p_open = false;
 			bGui_WindowContextMenu = false;
-		}
-		ImGui::EndPopup();
 	}
+		ImGui::EndPopup();
+}
 #endif
 }
 

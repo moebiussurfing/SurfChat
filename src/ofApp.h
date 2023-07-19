@@ -44,6 +44,33 @@
 		create prompt struct
 		add new. edit.
 
+
+
+	// Solo Panels Selectors behavior
+
+	if (bSolo.get())
+	{
+		// iterate all panels
+		// search for which one changed and to true
+		for (int i = 0; i < windows.size(); i++)
+		{
+			// if that one has changed and it goes to true
+			if (name == windows[i].bGui.getName() && windows[i].bGui)
+			{
+				// set the others to false and return
+				for (int k = 0; k < windows.size(); k++)
+				{
+					// i is the index of the panel toggle that just changed
+					if (k != i) //put the others to false
+					{
+						if (windows[k].bGui)
+							windows[k].bGui.set(false);
+					}
+				}
+				return;
+			}
+		}
+	}
 */
 
 //----
