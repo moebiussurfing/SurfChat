@@ -16,7 +16,7 @@
 
 	make a class for main gpt methods
 
-	fix threads for tts/ learn with color quatizer
+	fix threads for tts/ learn with color quantizer
 
 	add temperature, tokens for longer replay
 
@@ -78,7 +78,8 @@
 // Optional Modules
 
 #define USE_PRESETS
-// #define USE_OFX_ELEVEN_LABS
+#define USE_OFX_ELEVEN_LABS
+
 // #define USE_SURF_SUBTITLES
 // #define USE_EDITOR_INPUT
 // #define USE_EDITOR_RESPONSE
