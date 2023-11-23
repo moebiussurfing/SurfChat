@@ -27,9 +27,11 @@ as well as **explore** other similar or **related** ones._
 
 ## REQUERIMENTS
 
-* Requires a paid **OpenAI** account to use the **API**, or other alternative/custom servers as could be [Pawan.Krd](https://patreon.com/pawanosman?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link).
 * [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT) / FORK
+  * Requires a paid **OpenAI** account to use the **ChatGPT API**,
+  * Or other alternative/custom servers as could be [Pawan.Krd](https://patreon.com/pawanosman?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link).
 * [ofxElevenLabs](https://github.com/moebiussurfing/ofxElevenLabs)
+  * Requires to register at least a free account.
 * [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxSurfingImGui](https://github.com/moebiussurfing/ofxSurfingImGui)  
 * [ofxImGui](https://github.com/Daandelange/ofxImGui/) / FORK 
