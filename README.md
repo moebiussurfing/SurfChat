@@ -1,4 +1,4 @@
-# WIP
+# WIP / IN DEVELOP
 
 SurfChat
 =============================
@@ -11,9 +11,15 @@ SurfChat
 
 ## FEATURES
 
+## REQUIRES
+
+* [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT)
+* [ofxElevenLabs](https://github.com/moebiussurfing/ofxElevenLabs)
 * [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxSurfingImGui](https://github.com/moebiussurfing/ofxSurfingImGui)  
-* [ofxImGui](https://github.com/Daandelange/ofxImGui/) [_Fork_]  
+* [ofxImGui](https://github.com/Daandelange/ofxImGui/) / FORK 
+* [ofxWindowApp](https://github.com/moebiussurfing/ofxWindowApp)
+* ofxGui / OF CORE
 
 <details>
   <summary>TESTED SYSTEMS</summary>
