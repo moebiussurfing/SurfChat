@@ -64,6 +64,12 @@ as well as **explore** other similar or **related** ones._
   </p>
 </details>
 
+### TODO
+- Add [ofxSerpAPI](https://github.com/moebiussurfing/ofxSerpAPI)
+  - to bring clickable **URLs**, **images** or **videos**
+  - related to conversation answers
+  - as artist lists or highlighted releases/books/films/albums ...etc.
+
 ## Author
 An add-on by **@moebiusSurfing**  
 *( ManuMolina ) 2023*  
