@@ -4,10 +4,11 @@
 
 ## OVERVIEW
 
-_A **guided** and categorized **conversation assistant**.  
-Powered by **ChatGPT** and other **LLM engines**.  
-Designed to dive into different types of **creators** or artists,  
-as well as **explore** other similar or **related** ones._  
+_A **guided** and categorized **conversation assistant**._  
+
+_Powered by **ChatGPT** and other **LLM engines**._  
+
+_Designed to dive into different types of **creators** or artists, as well as **explore** other similar or **related** ones._  
 
 ## SCREENSHOT
  
@@ -19,8 +20,8 @@ as well as **explore** other similar or **related** ones._
 
 ## FEATURES
 
-- ChatGPT assistant. 
-  - Explorer for different creator areas:  
+- **ChatGPT** conversation assistant. 
+  - Explorer for different **creators areas**:  
     - **Music Band**
     - **Book Writer**
     - **Film Director**
@@ -29,11 +30,12 @@ as well as **explore** other similar or **related** ones._
     - **Illustrator**
     - **Painter**
     - **Philosopher**
-  - Get similar/related creators.
-  - Guide the conversation. Ask for:
-    - **Summarizations**
-    - **Sentences**
-    - **Keywords**
+  - Get **similar*/**related** creators.
+  - Guide the conversation.
+    - **Ask** for:
+      - **Summarizations**
+      - **Sentences**
+      - **Keywords**
 - Prompt text input box.
 - Conversational browser.
   - Customize response size.
@@ -41,7 +43,7 @@ as well as **explore** other similar or **related** ones._
   - Clickable floating menu.
 - **Text-to-Speech** response.
   - Using **ElevenLabs**.
-- **UI sound** and **responsive** layout.    
+- **UI sounds** and **responsive** layout.    
 
 ## REQUERIMENTS
 
@@ -50,9 +52,9 @@ as well as **explore** other similar or **related** ones._
   * Also can be used other alternative/custom servers as could be [Pawan.Krd](https://patreon.com/pawanosman?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link).
 * [ofxElevenLabs](https://github.com/moebiussurfing/ofxElevenLabs)
   * Requires to register at least a free account.
-* [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxSurfingImGui](https://github.com/moebiussurfing/ofxSurfingImGui)  
 * [ofxImGui](https://github.com/Daandelange/ofxImGui/) / FORK 
+* [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxWindowApp](https://github.com/moebiussurfing/ofxWindowApp)
 * ofxGui / OF CORE
 
