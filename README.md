@@ -7,9 +7,9 @@ SurfChat
 
 # OVERVIEW
 
-_A guided and categorized assistant based on **ChatGPT**.  
-Designed to dive into different types of creators or artists,  
-as well as explore other similar or related ones._  
+_A **guided** and categorized assistant based on **ChatGPT**.  
+Designed to dive into different types of **creators** or artists,  
+as well as **explore** other similar or **related** ones._  
 
 ## SCREENSHOT
  
@@ -21,9 +21,9 @@ as well as explore other similar or related ones._
 
 ## FEATURES
 
-- Prompt text input box
+- Prompt text input box.
+- Clickable floating menu.
 - Text-to-speech response reader.
-- Clickable floating menu
 
 ## REQUIRES
 
