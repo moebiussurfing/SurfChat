@@ -20,7 +20,7 @@ as well as **explore** other similar or **related** ones._
 ## FEATURES
 
 - ChatGPT assistant. 
-  - Explorer for different areas creators:  
+  - Explorer for different creator areas:  
     - **Music Band**
     - **Book Writer**
     - **Film Director**
