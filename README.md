@@ -4,8 +4,8 @@
 
 ## OVERVIEW
 
-_A **guided** and categorized **conversation assistant**  
-powered by **ChatGPT** and other **LLM engines**.  
+_A **guided** and categorized **conversation assistant**.  
+Powered by **ChatGPT** and other **LLM engines**.  
 Designed to dive into different types of **creators** or artists,  
 as well as **explore** other similar or **related** ones._  
 
