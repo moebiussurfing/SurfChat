@@ -7,10 +7,17 @@ SurfChat
 
 # OVERVIEW
 
+A guided and categorized assistant based on **ChatGPT**.
+Designed to dive into different types of creators or artists, 
+as well as explore other similar or related ones.
+
 ![](Capture.PNG)
 
 ## FEATURES
 
+- Prompt text input box
+- Text-to-speech response reader.
+ 
 ## REQUIRES
 
 * [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT)
