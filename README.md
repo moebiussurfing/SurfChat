@@ -2,7 +2,7 @@
 
 # SurfChat
 
-# OVERVIEW
+## OVERVIEW
 
 _A **guided** and categorized **conversation assistant** powered by **ChatGPT** and other **LLM engines**.  
 Designed to dive into different types of **creators** or artists,  
@@ -16,7 +16,7 @@ as well as **explore** other similar or **related** ones._
 
 [INSTAGRAM POST](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
 
-# FEATURES
+## FEATURES
 
 - Prompt text input box.
 - Clickable floating menu.
@@ -47,7 +47,7 @@ as well as **explore** other similar or **related** ones._
 An add-on by **@moebiusSurfing**  
 *( ManuMolina ) 2023*  
 
-### CONTACT / FOLLOW
+## CONTACT / FOLLOW
 <p>
 <a href="mailto:moebiussurfing@gmail.com" target="_blank">Email</a> |
 <a href="https://twitter.com/moebiusSurfing/" rel="nofollow">Twitter</a> | 
@@ -56,7 +56,7 @@ An add-on by **@moebiusSurfing**
 <a href="https://github.com/moebiussurfing" target="_blank">GitHub</a> 
 </p>
 
-### License
+## License
 MIT License
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
