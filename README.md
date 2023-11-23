@@ -1,13 +1,13 @@
-# WIP / IN DEVELOP
+# WIP / IN DEVELOP...
 
-SurfChat
+# SurfChat
 =============================
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Stage: beta](https://img.shields.io/badge/-alpha-red)
 
 # OVERVIEW
 
-_A **guided** and categorized assistant based on **ChatGPT**.  
+_A **guided** and categorized **conversation assistant** powered by **ChatGPT** and other **LLM engines**.  
 Designed to dive into different types of **creators** or artists,  
 as well as **explore** other similar or **related** ones._  
 
@@ -19,14 +19,15 @@ as well as **explore** other similar or **related** ones._
 
 [INSTAGRAM POST](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
 
-## FEATURES
+# FEATURES
 
 - Prompt text input box.
 - Clickable floating menu.
 - Text-to-speech response reader.
 
-## REQUIRES
+## REQUERIMENTS
 
+* Requires a paid **OpenAI** account to use the **API**, or other alternative/custom servers as could be [Pawan.Krd](https://patreon.com/pawanosman?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link).
 * [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT) / FORK
 * [ofxElevenLabs](https://github.com/moebiussurfing/ofxElevenLabs)
 * [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
