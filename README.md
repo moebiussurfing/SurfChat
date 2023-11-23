@@ -12,8 +12,14 @@ Designed to dive into different types of creators or artists,
 as well as explore other similar or related ones.  
 
 <br>
+
+## SCREENSHOT
  
 ![](Capture.PNG)
+
+## SCREENSHOTS AND VIDEO
+
+https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==
 
 ## FEATURES
 
@@ -22,7 +28,7 @@ as well as explore other similar or related ones.
  
 ## REQUIRES
 
-* [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT)
+* [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT) / FORK
 * [ofxElevenLabs](https://github.com/moebiussurfing/ofxElevenLabs)
 * [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxSurfingImGui](https://github.com/moebiussurfing/ofxSurfingImGui)  
