@@ -20,25 +20,25 @@ as well as **explore** other similar or **related** ones._
 ## FEATURES
 
 - ChatGPT assistant. 
- - Explorer for different areas creators:  
-  - **Music Band**
-  - **Book Writer**
-  - **Film Director**
-  - **Film Actor**
-  - **Film Title**
-  - **Illustrator**
-  - **Painter**
-  - **Philosopher**
- - Get similar/related creators.
- - Guide the conversation. Ask for:
-  - **Summarizations**
-  - **Sentences**
-  - **Keywords**
+  - Explorer for different areas creators:  
+    - **Music Band**
+    - **Book Writer**
+    - **Film Director**
+    - **Film Actor**
+    - **Film Title**
+    - **Illustrator**
+    - **Painter**
+    - **Philosopher**
+  - Get similar/related creators.
+  - Guide the conversation. Ask for:
+    - **Summarizations**
+    - **Sentences**
+    - **Keywords**
 - Prompt text input box.
 - Conversational browser.
   - Customize response size.
-   - **Short**, **Medium**, **Long** or **Unlimited**. 
-- Clickable floating menu.
+  - **Short**, **Medium**, **Long** or **Unlimited**. 
+  - Clickable floating menu.
 - **Text-to-Speech** response.
   - Using **ElevenLabs**.
 - **UI sound** and **responsive** layout.    
