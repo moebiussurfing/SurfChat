@@ -1,9 +1,6 @@
-# WIP / IN DEVELOP...
+# WIP / IN DEVELOP ...
 
 # SurfChat
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Stage: beta](https://img.shields.io/badge/-alpha-red)
 
 # OVERVIEW
 
@@ -61,3 +58,6 @@ An add-on by **@moebiusSurfing**
 
 ### License
 MIT License
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Stage: beta](https://img.shields.io/badge/-alpha-red)
