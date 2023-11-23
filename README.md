@@ -1,6 +1,6 @@
 # WIP / IN DEVELOP ...
 
-# SurfChat
+# "SurfChat" / PROTOTYPE
 
 ## OVERVIEW
 
