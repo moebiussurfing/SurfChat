@@ -23,7 +23,8 @@ as well as explore other similar or related ones.
 
 - Prompt text input box
 - Text-to-speech response reader.
- 
+- Clickable floating menu
+
 ## REQUIRES
 
 * [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT) / FORK
