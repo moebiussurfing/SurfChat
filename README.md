@@ -24,6 +24,8 @@
 
 [Instagram Post](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
 
+<br>
+
 ## FEATURES
 
 - **ChatGPT** conversation assistant. 
@@ -51,6 +53,8 @@
   - Using **ElevenLabs**.
 - **UI sounds** and **responsive layout**.    
 
+<br>
+
 <details>
   <summary>REQUERIMENTS</summary>
   <p>
@@ -65,7 +69,6 @@
 * [ofxSurfingHelpers](https://github.com/moebiussurfing/ofxSurfingHelpers)  
 * [ofxWindowApp](https://github.com/moebiussurfing/ofxWindowApp)
 * ofxGui / OF CORE
-
   </p>
 </details>
 
@@ -77,8 +80,13 @@
   </p>
 </details>
 
-### TODO
+<details>
+  <summary>TODO</summary>
+  <p>
+
 - Add [ofxSerpAPI](https://github.com/moebiussurfing/ofxSerpAPI). To bring clickable **URLs**, **images** or **videos** related to conversation answers, as artist lists or highlighted releases/books/films/albums ...etc.
+  </p>
+</details>
 
 ## Author
 An add-on by **@moebiusSurfing**  
