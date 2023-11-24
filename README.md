@@ -22,7 +22,7 @@
 
 ## SCREENSHOTS AND VIDEO
 
-[INSTAGRAM POST](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
+[Instagram Post](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
 
 ## FEATURES
 
