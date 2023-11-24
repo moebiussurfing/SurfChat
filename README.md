@@ -1,4 +1,7 @@
-# WIP / IN DEVELOP / PROTOTYPE ...
+# WIP /  
+# IN DEVELOP /  
+# PROTOTYPE  /
+...
 
 # SurfChat
 
