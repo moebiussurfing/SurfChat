@@ -1,10 +1,8 @@
 <H1>
 WIP /  DEVELOP / PROTOTYPE
-</H1>
 
 <br>
 
-<H1>
 SurfChat
 </H1>
 
