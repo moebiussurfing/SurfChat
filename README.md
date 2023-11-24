@@ -88,6 +88,8 @@
   </p>
 </details>
 
+<br>
+
 ## Author
 An add-on by **@moebiusSurfing**  
 *( ManuMolina ) 2023*  
@@ -100,6 +102,8 @@ An add-on by **@moebiusSurfing**
 <a href="https://www.instagram.com/moebiusSurfing/" rel="nofollow">Instagram</a> | 
 <a href="https://github.com/moebiussurfing" target="_blank">GitHub</a> 
 </p>
+
+<br>
 
 ## License
 MIT License
