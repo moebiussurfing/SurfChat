@@ -54,6 +54,7 @@
 <details>
   <summary>REQUERIMENTS</summary>
   <p>
+   
 * [ofxChatGPT](https://github.com/moebiussurfing/ofxChatGPT) / FORK
   * Requires a paid **OpenAI** account to use the **ChatGPT API**.
   * Also can be used other alternative/custom servers as could be [Pawan.Krd](https://patreon.com/pawanosman?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link).
