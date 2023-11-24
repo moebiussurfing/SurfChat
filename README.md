@@ -36,7 +36,7 @@
     - **Illustrator**
     - **Painter**
     - **Philosopher**
-  - Get **similar*/**related** creators.
+  - Get **Similar**/**Related** creators.
   - Guide the conversation.
     - **Ask** for:
       - **Summarizations**
@@ -46,10 +46,10 @@
 - Conversational browser.
   - Customize response size.
   - **Short**, **Medium**, **Long** or **Unlimited**. 
-  - Clickable floating menu.
+  - Clickable **floating menu**.
 - **Text-to-Speech** response.
   - Using **ElevenLabs**.
-- **UI sounds** and **responsive** layout.    
+- **UI sounds** and **responsive layout**.    
 
 ## REQUERIMENTS
 
