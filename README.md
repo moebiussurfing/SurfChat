@@ -1,6 +1,6 @@
-# WIP / IN DEVELOP ...
+# WIP / IN DEVELOP / PROTOTYPE ...
 
-# "SurfChat" / PROTOTYPE
+# SurfChat
 
 ## OVERVIEW
 
@@ -9,6 +9,7 @@ _A **guided** and categorized **conversation assistant**._
 _Powered by **ChatGPT** and other **LLM engines**._  
 
 _Designed to dive into different types of **creators** or artists, as well as **explore** other similar or **related** ones._  
+
 
 ## SCREENSHOT
  
