@@ -3,7 +3,7 @@ WIP /  DEVELOP / PROTOTYPE
 
 <br><br>
 
-SurfChat
+chatSURF
 </H1>
 
 <br>
