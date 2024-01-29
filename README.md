@@ -26,7 +26,8 @@ chatSURF
 
 ## SCREENSHOTS AND VIDEO
 
-[Instagram Post](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)
+[Instagram Post](https://www.instagram.com/p/Cu9Iy05OdpC/?utm_source=ig_web_copy_link&igshid=MzRlODBiNWFlZA==)  
+[Medium Post](https://medium.com/@moebiussurfing/chatsurf-prototype-05955ed6fb9f)  
 
 <br>
 
